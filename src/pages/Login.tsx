@@ -1,32 +1,46 @@
 import React, { useState } from 'react';
 import { Calendar, User, Building2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword } from 'firebase/auth'; // Ajout de Firebase
-import { auth } from '../firebase'; // Assure-toi que firebase.ts est configuré
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../firebase';
 
-type UserType = 'client' | 'broker';
+type UserType = 'client' | 'courtier';
 
 export default function Login() {
   const [userType, setUserType] = useState<UserType>('client');
-  const [email, setEmail] = useState(''); // Ajout pour stocker l’email
-  const [password, setPassword] = useState(''); // Ajout pour stocker le mot de passe
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (userType === 'client') {
-      // Connexion Client via Firebase
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-        navigate('/client/dashboard'); // Redirection après connexion réussie
-      } catch (err) {
-        console.error('Erreur lors de la connexion client :', err);
-        alert('Erreur de connexion : ' + (err as Error).message); // Message d’erreur simple
+    try {
+      // Étape 1 : Connexion avec Firebase Authentication
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Étape 2 : Chercher dans la bonne collection selon userType
+      const collectionName = userType === 'client' ? 'users' : 'courtiers';
+      const userDocRef = doc(db, collectionName, user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        console.log(`${userType} connecté avec succès :`, userData);
+
+        // Étape 3 : Rediriger selon le type
+        if (userType === 'client') {
+          navigate('/client/dashboard');
+        } else if (userType === 'courtier') {
+          navigate('/courtier/dashboard'); // Changé de "/broker" à "/courtier"
+        }
+      } else {
+        throw new Error(`Cet utilisateur n’est pas enregistré comme ${userType}.`);
       }
-    } else {
-      // Logique originale pour Broker (inchangée)
-      console.log('Connexion Broker:', { email, password });
-      navigate('/broker/dashboard');
+    } catch (err) {
+      console.error('Erreur lors de la connexion :', err);
+      alert('Erreur de connexion : ' + (err as Error).message);
     }
   };
 
@@ -58,11 +72,11 @@ export default function Login() {
             </button>
             <button
               className={`flex-1 py-2 px-4 rounded-lg flex items-center justify-center space-x-2 ${
-                userType === 'broker'
+                userType === 'courtier'
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
-              onClick={() => setUserType('broker')}
+              onClick={() => setUserType('courtier')}
             >
               <Building2 className="h-5 w-5" />
               <span>Courtier</span>
@@ -81,8 +95,8 @@ export default function Login() {
                   type="email"
                   autoComplete="email"
                   required
-                  value={email} // Ajout pour lier l’état
-                  onChange={(e) => setEmail(e.target.value)} // Ajout pour mettre à jour l’état
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
@@ -99,8 +113,8 @@ export default function Login() {
                   type="password"
                   autoComplete="current-password"
                   required
-                  value={password} // Ajout pour lier l’état
-                  onChange={(e) => setPassword(e.target.value)} // Ajout pour mettre à jour l’état
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
