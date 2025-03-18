@@ -1,19 +1,31 @@
 import React, { useState } from 'react';
 import { Calendar, User, Building2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { signInWithEmailAndPassword } from 'firebase/auth'; // Ajout de Firebase
+import { auth } from '../firebase'; // Assure-toi que firebase.ts est configuré
 
 type UserType = 'client' | 'broker';
 
 export default function Login() {
   const [userType, setUserType] = useState<UserType>('client');
+  const [email, setEmail] = useState(''); // Ajout pour stocker l’email
+  const [password, setPassword] = useState(''); // Ajout pour stocker le mot de passe
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock login logic
     if (userType === 'client') {
-      navigate('/client/dashboard');
+      // Connexion Client via Firebase
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        navigate('/client/dashboard'); // Redirection après connexion réussie
+      } catch (err) {
+        console.error('Erreur lors de la connexion client :', err);
+        alert('Erreur de connexion : ' + (err as Error).message); // Message d’erreur simple
+      }
     } else {
+      // Logique originale pour Broker (inchangée)
+      console.log('Connexion Broker:', { email, password });
       navigate('/broker/dashboard');
     }
   };
@@ -69,6 +81,8 @@ export default function Login() {
                   type="email"
                   autoComplete="email"
                   required
+                  value={email} // Ajout pour lier l’état
+                  onChange={(e) => setEmail(e.target.value)} // Ajout pour mettre à jour l’état
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
@@ -85,6 +99,8 @@ export default function Login() {
                   type="password"
                   autoComplete="current-password"
                   required
+                  value={password} // Ajout pour lier l’état
+                  onChange={(e) => setPassword(e.target.value)} // Ajout pour mettre à jour l’état
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>

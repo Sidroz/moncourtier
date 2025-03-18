@@ -1,90 +1,162 @@
 import React, { useState } from 'react';
-import { User, Lock, Mail } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Calendar } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore'; // Ajout pour Firestore
+import { auth, db } from '../firebase'; // Import de db
 
-function Signup() {
+export default function Signup() {
   const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const navigate = useNavigate();
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Logique d'inscription à implémenter ici (ex. appel API)
-    console.log('Inscription:', { email, username, password });
-    navigate('/login'); // Redirection vers la page de connexion après inscription
+    try {
+      // Étape 1 : Créer l’utilisateur avec Firebase Authentication
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Étape 2 : Stocker les données dans Firestore
+      await setDoc(doc(db, 'users', user.uid), {
+        firstName: firstName,
+        lastName: lastName,
+        email: email,
+        type: 'client', // Par défaut, on inscrit un "client"
+      });
+
+      console.log('Utilisateur inscrit avec succès dans Firestore :', {
+        firstName,
+        lastName,
+        email,
+        type: 'client',
+      });
+      navigate('/login');
+    } catch (err) {
+      console.error('Erreur lors de l’inscription :', err);
+      alert('Erreur d’inscription : ' + (err as Error).message);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white rounded-xl shadow-2xl p-8 transform hover:scale-105 transition-transform duration-300">
-        <div>
-          <h2 className="text-center text-2xl font-bold text-gray-900">
-            Créez votre compte MonCourtier
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Inscrivez-vous pour accéder à nos services
-          </p>
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="flex justify-center">
+          <Calendar className="h-12 w-12 text-blue-600" />
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSignup}>
-          <div className="space-y-6">
-            {/* Champ Email */}
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="email"
-                placeholder="Adresse email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="pl-10 w-full h-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500"
-                required
-              />
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          Inscription à MonCourtier
+        </h2>
+      </div>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <div>
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+                Prénom
+              </label>
+              <div className="mt-1">
+                <input
+                  id="firstName"
+                  name="firstName"
+                  type="text"
+                  autoComplete="given-name"
+                  required
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
             </div>
 
-            {/* Champ Nom d'utilisateur */}
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Nom d'utilisateur"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="pl-10 w-full h-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500"
-                required
-              />
+            <div>
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+                Nom
+              </label>
+              <div className="mt-1">
+                <input
+                  id="lastName"
+                  name="lastName"
+                  type="text"
+                  autoComplete="family-name"
+                  required
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
             </div>
 
-            {/* Champ Mot de passe */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Adresse email
+              </label>
+              <div className="mt-1">
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Mot de passe
+              </label>
+              <div className="mt-1">
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                S'inscrire
+              </button>
+            </div>
+          </form>
+
+          <div className="mt-6">
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="password"
-                placeholder="Mot de passe"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="pl-10 w-full h-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500"
-                required
-              />
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Déjà inscrit ?</span>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <Link
+                to="/login"
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100"
+              >
+                Se connecter
+              </Link>
             </div>
           </div>
-
-          <button
-            type="submit"
-            className="w-full bg-blue-950 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
-          >
-            S'inscrire
-          </button>
-        </form>
-
-        <p className="text-center text-sm text-gray-600">
-          Déjà un compte ?{' '}
-          <a href="/login" className="text-blue-950 hover:text-blue-700 font-medium">
-            Connectez-vous
-          </a>
-        </p>
+        </div>
       </div>
     </div>
   );
 }
-
-export default Signup;
