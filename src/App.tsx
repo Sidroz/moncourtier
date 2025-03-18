@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Search, MapPin, Calendar, Clock, Building2, Shield, Wallet, CheckCircle, ArrowRight, Briefcase, Calculator, PiggyBank, User, Weight } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 
-type BrokerType = 'insurance' | 'realestate' | 'credit' | 'retirement' | 'tax' | 'recruitment' | 'all';
+type BrokerType = 'assurance' | 'realestate' | 'credit' | 'retirement' | 'tax' | 'recruitment' | 'all';
 
 function App() {
   const [selectedType, setSelectedType] = useState<BrokerType>('all');
@@ -75,7 +75,7 @@ function App() {
                   onChange={(e) => setSelectedType(e.target.value as BrokerType)}
                 >
                   <option value="all">Tous les types de courtiers</option>
-                  <option value="insurance">Courtier en Assurance</option>
+                  <option value="assurance">Courtier en Assurance</option>
                   <option value="realestate">Courtier Immobilier</option>
                   <option value="credit">Courtier en Crédit</option>
                   <option value="retirement">Courtier en Retraite</option>

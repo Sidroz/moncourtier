@@ -21,6 +21,7 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/courtier/dashboard" element={<BrokerDashboard />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/broker-signup" element= {<BrokerSignup />} /> // Nouvelle route
+        <Route path="/results" element= {<Results />} /> // Nouvelle route
       </Routes>
     </Router>
   </StrictMode>
