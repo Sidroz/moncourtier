@@ -98,7 +98,7 @@ export default function Results() {
               courtiers.map((courtier) => (
                 <div
                   key={courtier.id}
-                  className="bg-white rounded border border-gray-200 h-[300px] p-4"
+                  className="bg-white rounded border border-gray-200 h-[300px] p-4 content-center"
                 >
                   <div className="ml-5">
                     <div className="flex items-start">
@@ -114,7 +114,7 @@ export default function Results() {
                         </div>
                       )}
                       <div className="ml-2.5 flex-1">
-                        <h3 className="text-base font-semibold text-black">
+                      <h3 className="font-roboto font-semibold text-xl text-[#244257]">
                           {courtier.firstName} {courtier.lastName}
                         </h3>
                         <p className="text-sm text-gray-600 mt-2.5">{courtier.firmAddress}</p>
