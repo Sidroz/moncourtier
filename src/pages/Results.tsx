@@ -3,7 +3,9 @@ import { useSearchParams } from 'react-router-dom';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
-import { User, Calendar, Linkedin, Facebook } from 'lucide-react';
+import { User, Calendar } from 'lucide-react';
+import { FaMapPin, FaSquareFacebook, FaLinkedin } from "react-icons/fa6";
+
 
 interface Courtier {
   id: string;
@@ -113,16 +115,19 @@ export default function Results() {
                           <User className="h-16 w-16 text-gray-500" />
                         </div>
                       )}
-                      <div className="ml-2.5 flex-1">
+                      <div className="ml-2.5">
                       <h3 className="font-roboto font-semibold text-xl text-[#244257]">
-                          {courtier.firstName} {courtier.lastName}
+                        {courtier.firstName} {courtier.lastName}
                         </h3>
-                        <p className="text-sm text-gray-600 mt-2.5">{courtier.firmAddress}</p>
-                        <div className="mt-2 space-x-2">
+                        <div className="flex items-center space-x-1 mt-1">
+                          <FaMapPin className="h-4 w-4 text-gray-600" />
+                          <p className="text-sm text-gray-600">{courtier.firmAddress}</p>
+                        </div>
+                        <div className="mt-2 inline-flex flex-wrap space-x-2">
                           {courtier.specialties.map((specialty) => (
                             <span
                               key={specialty}
-                              className="inline-block bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded-full"
+                              className="font-roboto capitalize inline-block bg-[#244257]/20 text-gray-700 text-xs h-[35px] flex items-center justify-center px-5 rounded-full"
                             >
                               {specialty}
                             </span>
@@ -132,16 +137,18 @@ export default function Results() {
                     </div>
                     <div className="mt-4">
                       <div className="flex space-x-2.5 mb-4">
-                        <button className="w-[150px] py-2 bg-blue-300 text-white rounded text-sm font-medium hover:bg-blue-400">
-                          Voir Profil
+                        <button className="w-[150px] py-2 bg-[#3892d2] text-white rounded-2xl text-base font-medium hover:bg-blue-400">
+                          VOIR PROFIL
                         </button>
-                        <button className="w-[270px] py-2 bg-blue-700 text-white rounded text-sm font-medium hover:bg-blue-800">
-                          Prendre Rendez-vous
+                        <button className="w-[270px] py-2 bg-[#244257] text-white rounded-2xl text-base font-medium hover:bg-blue-800">
+                        PRENDRE RENDEZ-VOUS
                         </button>
                       </div>
-                      <div className="flex space-x-2">
-                        <Linkedin className="h-5 w-5 text-gray-500 hover:text-blue-600" />
-                        <Facebook className="h-5 w-5 text-gray-500 hover:text-blue-600" />
+                      <div className="w-[150px] flex justify-center">
+                        <div className="flex space-x-2">
+                          <FaLinkedin className="h-5 w-5 text-[#244257] hover:text-blue-600" />
+                          <FaSquareFacebook className="h-5 w-5 text-[#244257] hover:text-blue-600" />
+                        </div>
                       </div>
                     </div>
                   </div>
