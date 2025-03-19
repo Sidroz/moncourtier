@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
-import { User } from 'lucide-react';
+import { User, Calendar, Linkedin, Facebook } from 'lucide-react';
 
 interface Courtier {
   id: string;
@@ -26,8 +26,8 @@ const defaultCenter = {
 
 export default function Results() {
   const [searchParams] = useSearchParams();
-  const type = searchParams.get('type') || ''; // Récupère "type" au lieu de "specialite_client"
-  const location = searchParams.get('location') || ''; // Récupère "location" au lieu de "adresse_client"
+  const type = searchParams.get('type') || '';
+  const location = searchParams.get('location') || '';
   const [courtiers, setCourtiers] = useState<Courtier[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -44,7 +44,6 @@ export default function Results() {
           ...doc.data(),
         })) as Courtier[];
 
-        // Filtrer par localisation (approximation textuelle pour l’instant)
         const filteredCourtiers = courtiersData.filter((courtier) =>
           courtier.firmAddress.toLowerCase().includes(location.toLowerCase())
         );
@@ -60,14 +59,37 @@ export default function Results() {
   }, [type, location]);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-extrabold text-gray-900 mb-6">
-          Courtier en {type} près de {location}
-        </h1>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div className="min-h-screen bg-gray-100">
+      {/* Header */}
+      <header className="bg-white">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center">
+          <Calendar className="h-6 w-6 text-blue-600 mr-2" />
+          <h1 className="text-lg font-semibold text-black">MonCourtier</h1>
+        </div>
+      </header>
+
+      {/* Barre de recherche */}
+      <div className="bg-gray-200">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center space-x-4">
+          <span className="text-sm text-gray-700">Spécialité :</span>
+          <span className="text-sm text-gray-900 bg-white px-2 py-1 rounded border border-gray-300">
+            {type}
+          </span>
+          <span className="text-sm text-gray-700">Localisation :</span>
+          <span className="text-sm text-gray-900 bg-white px-2 py-1 rounded border border-gray-300">
+            {location}
+          </span>
+        </div>
+      </div>
+
+      {/* Contenu principal */}
+      <div className="py-6">
+        <h2 className="text-xl font-bold text-black mb-4 text-center">
+          Courtiers en {type} disponibles près de {location}
+        </h2>
+        <div className="flex flex-col lg:flex-row gap-6 ml-20 mr-20">
           {/* Liste des courtiers */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-3 w-[1200px]">
             {loading ? (
               <p className="text-gray-600">Chargement...</p>
             ) : courtiers.length === 0 ? (
@@ -76,31 +98,51 @@ export default function Results() {
               courtiers.map((courtier) => (
                 <div
                   key={courtier.id}
-                  className="bg-white p-6 rounded-lg shadow flex items-start space-x-4"
+                  className="bg-white rounded border border-gray-200 h-[300px] p-4"
                 >
-                  {courtier.photoUrl ? (
-                    <img
-                      src={courtier.photoUrl}
-                      alt={`${courtier.firstName} ${courtier.lastName}`}
-                      className="w-16 h-16 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
-                      <User className="h-8 w-8 text-gray-500" />
+                  <div className="ml-5">
+                    <div className="flex items-start">
+                      {courtier.photoUrl ? (
+                        <img
+                          src={courtier.photoUrl}
+                          alt={`${courtier.firstName} ${courtier.lastName}`}
+                          className="w-36 h-36 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-36 h-36 rounded-full bg-gray-200 flex items-center justify-center">
+                          <User className="h-16 w-16 text-gray-500" />
+                        </div>
+                      )}
+                      <div className="ml-2.5 flex-1">
+                        <h3 className="text-base font-semibold text-black">
+                          {courtier.firstName} {courtier.lastName}
+                        </h3>
+                        <p className="text-sm text-gray-600 mt-2.5">{courtier.firmAddress}</p>
+                        <div className="mt-2 space-x-2">
+                          {courtier.specialties.map((specialty) => (
+                            <span
+                              key={specialty}
+                              className="inline-block bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded-full"
+                            >
+                              {specialty}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  )}
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {courtier.firstName} {courtier.lastName}
-                    </h3>
-                    <p className="text-sm text-gray-600">{courtier.firmAddress}</p>
-                    <div className="mt-4 flex space-x-4">
-                      <button className="py-2 px-4 border border-blue-600 text-blue-600 rounded-md text-sm font-medium hover:bg-blue-50">
-                        Voir le profil
-                      </button>
-                      <button className="py-2 px-4 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
-                        Prendre rendez-vous
-                      </button>
+                    <div className="mt-4">
+                      <div className="flex space-x-2.5 mb-4">
+                        <button className="w-[150px] py-2 bg-blue-300 text-white rounded text-sm font-medium hover:bg-blue-400">
+                          Voir Profil
+                        </button>
+                        <button className="w-[270px] py-2 bg-blue-700 text-white rounded text-sm font-medium hover:bg-blue-800">
+                          Prendre Rendez-vous
+                        </button>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Linkedin className="h-5 w-5 text-gray-500 hover:text-blue-600" />
+                        <Facebook className="h-5 w-5 text-gray-500 hover:text-blue-600" />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -109,9 +151,9 @@ export default function Results() {
           </div>
 
           {/* Carte Google Maps */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-12 bg-white rounded-lg shadow p-4 h-[500px]">
-              <LoadScript googleMapsApiKey="AIzaSyDznWGTL7RgpZeYbrkRiIaOHSni2-UYA8g">
+          <div className="ml-14 flex-1">
+            <div className="bg-white rounded border border-gray-200 h-[calc(100vh-200px)]">
+              <LoadScript googleMapsApiKey="TA_CLE_API_GOOGLE_MAPS">
                 <GoogleMap
                   mapContainerStyle={mapContainerStyle}
                   center={defaultCenter}
@@ -120,7 +162,7 @@ export default function Results() {
                   {courtiers.map((courtier) => (
                     <Marker
                       key={courtier.id}
-                      position={defaultCenter} // À ajuster avec géocodage plus tard
+                      position={defaultCenter} // À ajuster avec géocodage
                     />
                   ))}
                 </GoogleMap>
