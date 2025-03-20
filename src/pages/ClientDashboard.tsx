@@ -1,11 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Calendar, HelpCircle, LogOut, User, ArrowRight } from 'lucide-react';
+import { Calendar, HelpCircle, LogOut, User, Plus } from 'lucide-react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
-import { FaPlus } from "react-icons/fa6";
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+
+interface Appointment {
+  id: number;
+  title: string;
+  date: string;
+  brokerName: string;
+  brokerPhotoURL: string;
+}
 
 export default function ClientDashboard() {
   const [user, loading, error] = useAuthState(auth);
@@ -14,9 +21,23 @@ export default function ClientDashboard() {
     lastName?: string;
     photoURL?: string;
   } | null>(null);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [authChecked, setAuthChecked] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    // Fictitious appointments data
+    const mockAppointments: Appointment[] = [
+      { id: 1, title: 'Meeting with Alex', date: '2025-03-22', brokerName: 'Alex', brokerPhotoURL: 'https://example.com/path/to/alex-photo.jpg' },
+      { id: 2, title: 'Dentist Appointment', date: '2025-03-23', brokerName: 'Dr. Smith', brokerPhotoURL: 'https://example.com/path/to/smith-photo.jpg' },
+      { id: 3, title: 'Lunch with Sarah', date: '2025-03-24', brokerName: 'Sarah', brokerPhotoURL: 'https://example.com/path/to/sarah-photo.jpg' },
+    ];
+    
+    // Sort appointments by date
+    const sortedAppointments = mockAppointments.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    setAppointments(sortedAppointments);
+  }, []);
 
   useEffect(() => {
     // Attendre que le chargement de l'authentification soit terminé
@@ -74,6 +95,12 @@ export default function ClientDashboard() {
     return <div className="min-h-screen flex items-center justify-center">Veuillez vous connecter.</div>;
   }
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const options = { day: 'numeric', month: 'long', year: 'numeric' } as const;
+    return date.toLocaleDateString('fr-FR', options);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -95,9 +122,16 @@ export default function ClientDashboard() {
               >
                 Accueil
               </Link>
-              <button className="px-4 py-2 bg-[#244257] text-white rounded-lg hover:bg-blue-800">
+              <Link 
+                to="/client/appointments" 
+                className={`px-4 py-2 rounded-lg hover:bg-blue-800 ${
+                  location.pathname === '/client/appointments' 
+                    ? 'bg-white text-[#244257]' 
+                    : 'bg-[#244257] text-white hover:bg-blue-800'
+                }`}
+              >
                 Rendez-vous
-              </button>
+              </Link>
               <button className="px-4 py-2 bg-[#244257] text-white rounded-lg hover:bg-blue-800">
                 Vos Courtiers
               </button>
@@ -143,31 +177,35 @@ export default function ClientDashboard() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Welcome Message */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Bonjour, {userData ? userData.firstName : 'Utilisateur'}
-          </h1>
-          <p className="text-gray-600 mt-2">Vous n'avez pas de rendez-vous de prévu.</p>
-        </div>
-
-        {/* Cards Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Card 1: Liste des rendez-vous */}
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">Tableau de bord</h1>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="bg-white rounded-lg shadow-md p-6 relative min-h-[400px] flex flex-col justify-between">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Liste des rendez-vous</h2>
+              <h2 className="text-lg font-semibold text-gray-900">Prochains Rendez-vous</h2>
+              <div className="absolute top-5 right-4 bg-[#244257] text-white rounded-full w-8 h-8 flex items-center justify-center">
+                {appointments.length}
+              </div>
             </div>
-            <p className="text-gray-600 mb-4 text-center">Vous n'avez pas de rendez-vous.</p>
+            <ul className="space-y-4">
+              {appointments.map(appointment => (
+                <li key={appointment.id} className="flex items-center space-x-4">
+                  <img 
+                    src={appointment.brokerPhotoURL || 'https://example.com/path/to/default-photo.jpg'} 
+                    alt="Courtier"
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                  <div>
+                    <p className="text-gray-700 font-semibold">{appointment.brokerName}</p>
+                    <p className="text-gray-500 text-sm">{formatDate(appointment.date)}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
             <button className="mt-6 w-full flex items-center justify-center space-x-2 text-blue-600 hover:text-blue-700 font-medium py-2 px-4 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
-                <FaPlus className="h-5 w-5" />
-                <span>Prendre un rendez-vous</span>
+              <Plus className="h-5 w-5" />
+              <span>Prendre un rendez-vous</span>
             </button>
-            <div className="absolute top-5 right-4 bg-[#244257] text-white rounded-full w-8 h-8 flex items-center justify-center">
-              0
-            </div>
           </div>
 
           {/* Card 2: Liste des courtiers */}

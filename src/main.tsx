@@ -10,6 +10,7 @@ import BrokerSignup from './pages/BrokerSignup.tsx';
 import Client from './pages/ClientDashboard.tsx';
 import ClientSettings from './pages/ClientSettings.tsx';
 import ClientSecurity from './pages/ClientSecurity.tsx';
+import ClientAppointments from './pages/ClientAppointments.tsx';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(
@@ -25,6 +26,7 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/client/settings" element={<ClientSettings />} />
         <Route path="/results" element={<Results />} />
         <Route path="/client/security" element={<ClientSecurity />} />
+        <Route path="/client/appointments" element={<ClientAppointments />} />
       </Routes>
     </Router>
   </StrictMode>
