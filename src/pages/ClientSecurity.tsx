@@ -9,6 +9,7 @@ import { Calendar, LogOut, User, HelpCircle, Shield, ArrowRight, Trash2 } from '
 interface UserProfile {
   firstName: string;
   lastName: string;
+  photoURL?: string;
 }
 
 export default function ClientSecurity() {
@@ -19,7 +20,7 @@ export default function ClientSecurity() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
-  const [profile, setProfile] = useState<UserProfile>({ firstName: '', lastName: '' });
+  const [profile, setProfile] = useState<UserProfile>({ firstName: '', lastName: '', photoURL: '' });
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -121,7 +122,7 @@ export default function ClientSecurity() {
           </div>
           <div className="flex items-center space-x-4">
             <nav className="flex space-x-4">
-              <Link to="/" className="px-4 py-2 bg-white text-[#244257] rounded-lg hover:bg-gray-100">
+              <Link to="/" className="px-4 py-2 bg-[#244257] text-white rounded-lg hover:bg-blue-800">
                 Accueil
               </Link>
               <button className="px-4 py-2 bg-[#244257] text-white rounded-lg hover:bg-blue-800">
@@ -139,8 +140,16 @@ export default function ClientSecurity() {
               <span>Centre d'aide</span>
             </button>
             <div className="flex items-center space-x-2">
-              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                <User className="h-6 w-6 text-gray-500" />
+              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                {profile.photoURL ? (
+                  <img 
+                    src={profile.photoURL} 
+                    alt="Photo de profil"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User className="h-6 w-6 text-gray-500" />
+                )}
               </div>
               <div className="flex flex-col">
                 <span className="text-sm">{profile.firstName} {profile.lastName}</span>

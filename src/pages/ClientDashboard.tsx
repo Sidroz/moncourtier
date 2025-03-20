@@ -1,36 +1,56 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar, HelpCircle, User, LogOut, PlusSquare, ArrowRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Calendar, HelpCircle, LogOut, User, ArrowRight } from 'lucide-react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { FaPlus } from "react-icons/fa6";
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 
 export default function ClientDashboard() {
   const [user, loading, error] = useAuthState(auth);
-  const [userData, setUserData] = useState<{ firstName?: string; lastName?: string } | null>(null);
+  const [userData, setUserData] = useState<{ 
+    firstName?: string; 
+    lastName?: string;
+    photoURL?: string;
+  } | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    if (!user) return;
-  
-    const fetchUserData = async () => {
-      try {
-        const userDocRef = doc(db, 'users', user.uid);
-        const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists()) {
-          setUserData(userDoc.data());
-        } else {
-          console.warn('Document utilisateur non trouvé dans Firestore');
-        }
-      } catch (err) {
-        console.error('Erreur lors de la récupération des données utilisateur:', err);
+    // Attendre que le chargement de l'authentification soit terminé
+    if (!loading) {
+      setAuthChecked(true);
+      
+      // Si l'utilisateur n'est pas connecté, rediriger vers la page de connexion
+      if (!user) {
+        navigate('/login');
+        return;
       }
-    };
-  
-    fetchUserData();
-  }, [user]);
+    }
+  }, [user, loading, navigate]);
+
+  useEffect(() => {
+    // Ne récupérer les données utilisateur que si l'utilisateur est connecté et que l'authentification a été vérifiée
+    if (user && authChecked) {
+      const fetchUserData = async () => {
+        try {
+          const userDocRef = doc(db, 'users', user.uid);
+          const userDoc = await getDoc(userDocRef);
+          if (userDoc.exists()) {
+            setUserData(userDoc.data());
+          } else {
+            console.warn('Document utilisateur non trouvé dans Firestore');
+          }
+        } catch (err) {
+          console.error('Erreur lors de la récupération des données utilisateur:', err);
+        }
+      };
+      
+      fetchUserData();
+    }
+  }, [user, authChecked]);
 
   const handleLogout = async () => {
     try {
@@ -55,7 +75,7 @@ export default function ClientDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-[#244257] text-white">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -65,7 +85,14 @@ export default function ClientDashboard() {
           </div>
           <div className="flex items-center space-x-4">
             <nav className="flex space-x-4">
-              <Link to="/client" className="px-4 py-2 bg-white text-[#244257] rounded-lg hover:bg-gray-100">
+              <Link 
+                to="/client" 
+                className={`px-4 py-2 rounded-lg hover:bg-gray-100 ${
+                  location.pathname === '/client' 
+                    ? 'bg-white text-[#244257]' 
+                    : 'bg-[#244257] text-white hover:bg-blue-800'
+                }`}
+              >
                 Accueil
               </Link>
               <button className="px-4 py-2 bg-[#244257] text-white rounded-lg hover:bg-blue-800">
@@ -74,7 +101,14 @@ export default function ClientDashboard() {
               <button className="px-4 py-2 bg-[#244257] text-white rounded-lg hover:bg-blue-800">
                 Vos Courtiers
               </button>
-              <Link to="/client/settings" className="px-4 py-2 bg-white text-[#244257] rounded-lg hover:bg-gray-100">
+              <Link 
+                to="/client/settings" 
+                className={`px-4 py-2 rounded-lg hover:bg-blue-800 ${
+                  location.pathname.includes('/client/settings') || location.pathname.includes('/client/security')
+                    ? 'bg-white text-[#244257]' 
+                    : 'bg-[#244257] text-white hover:bg-blue-800'
+                }`}
+              >
                 Profil
               </Link>
             </nav>
@@ -83,8 +117,16 @@ export default function ClientDashboard() {
               <span>Centre d'aide</span>
             </button>
             <div className="flex items-center space-x-2">
-              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                <User className="h-6 w-6 text-gray-500" />
+              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                {userData?.photoURL ? (
+                  <img 
+                    src={userData.photoURL} 
+                    alt="Photo de profil"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User className="h-6 w-6 text-gray-500" />
+                )}
               </div>
               <div className="flex flex-col">
                 <span className="text-sm">{userData ? `${userData.firstName} ${userData.lastName}` : user.email || 'Utilisateur'}</span>
@@ -142,15 +184,25 @@ export default function ClientDashboard() {
 
           {/* Card 3: Informations de l'utilisateur */}
           <div className="bg-white rounded-lg shadow-md p-6 flex flex-col items-center justify-center min-h-[400px]">
-          <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
-              <User className="h-8 w-8 text-gray-500" />
+            <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+              {userData?.photoURL ? (
+                <img 
+                  src={userData.photoURL} 
+                  alt="Photo de profil"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User className="h-8 w-8 text-gray-500" />
+              )}
             </div>
             <div className="mt-4 text-center">
               <p className="text-gray-900 font-semibold">{userData ? `${userData.firstName} ${userData.lastName}` : user.email || 'Utilisateur'}</p>
               <p className="text-gray-900 font-regular">{user.email}</p>
-              <button className="mt-2 inline-block px-4 py-2 bg-[#244257] text-white rounded-lg hover:bg-blue-800">
-                Voir mon compte
-              </button>
+              <Link to="/client/settings">
+                <button className="mt-2 inline-block px-4 py-2 bg-[#244257] text-white rounded-lg hover:bg-blue-800">
+                  Voir mon compte
+                </button>
+              </Link>
             </div>
           </div>
         </div>
