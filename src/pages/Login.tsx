@@ -31,7 +31,7 @@ export default function Login() {
 
         // Étape 3 : Rediriger selon le type
         if (userType === 'client') {
-          navigate('/client/dashboard');
+          navigate('/client');
         } else if (userType === 'courtier') {
           navigate('/courtier/dashboard'); // Changé de "/broker" à "/courtier"
         }

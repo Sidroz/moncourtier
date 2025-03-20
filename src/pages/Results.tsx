@@ -4,8 +4,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
 import { User, Calendar } from 'lucide-react';
-import { FaMapPin, FaSquareFacebook, FaLinkedin } from "react-icons/fa6";
-
+import { FaMapPin, FaSquareFacebook, FaLinkedin } from 'react-icons/fa6';
 
 interface Courtier {
   id: string;
@@ -14,6 +13,7 @@ interface Courtier {
   firmAddress: string;
   photoUrl?: string;
   specialties: string[];
+  location: { lat: number; lng: number }; // Ajout du champ location
 }
 
 const mapContainerStyle = {
@@ -21,34 +21,54 @@ const mapContainerStyle = {
   height: '100%',
 };
 
-const defaultCenter = {
-  lat: 44.837789, // Bordeaux par défaut
-  lng: -0.57918,
-};
-
 export default function Results() {
   const [searchParams] = useSearchParams();
   const type = searchParams.get('type') || '';
   const location = searchParams.get('location') || '';
+  const lat = parseFloat(searchParams.get('lat') || '0'); // Récupérer lat depuis l'URL
+  const lng = parseFloat(searchParams.get('lng') || '0'); // Récupérer lng depuis l'URL
   const [courtiers, setCourtiers] = useState<Courtier[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
+    lat: 44.837789, // Bordeaux par défaut
+    lng: -0.57918,
+  });
 
   useEffect(() => {
     const fetchCourtiers = async () => {
       try {
-        const courtiersQuery = query(
-          collection(db, 'courtiers'),
-          where('specialties', 'array-contains', type)
-        );
+        // Si des coordonnées sont fournies, centrer la carte sur ces coordonnées
+        if (lat && lng) {
+          setMapCenter({ lat, lng });
+        }
+
+        // Récupérer les courtiers correspondant au type
+        const courtiersQuery = type
+          ? query(collection(db, 'courtiers'), where('specialties', 'array-contains', type))
+          : query(collection(db, 'courtiers'));
+
         const querySnapshot = await getDocs(courtiersQuery);
         const courtiersData = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         })) as Courtier[];
 
-        const filteredCourtiers = courtiersData.filter((courtier) =>
-          courtier.firmAddress.toLowerCase().includes(location.toLowerCase())
-        );
+        // Trier les courtiers par distance si des coordonnées sont fournies
+        let filteredCourtiers = courtiersData;
+        if (lat && lng) {
+          filteredCourtiers = courtiersData
+            .filter((courtier) => courtier.location) // S'assurer que location existe
+            .sort((a, b) => {
+              const distanceA = Math.sqrt(
+                Math.pow(a.location.lat - lat, 2) + Math.pow(a.location.lng - lng, 2)
+              );
+              const distanceB = Math.sqrt(
+                Math.pow(b.location.lat - lat, 2) + Math.pow(b.location.lng - lng, 2)
+              );
+              return distanceA - distanceB;
+            });
+        }
+
         setCourtiers(filteredCourtiers);
       } catch (err) {
         console.error('Erreur lors de la récupération des courtiers :', err);
@@ -58,7 +78,24 @@ export default function Results() {
     };
 
     fetchCourtiers();
-  }, [type, location]);
+  }, [type, lat, lng]);
+
+  const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
+  if (!googleMapsApiKey) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Erreur de configuration
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            La clé API Google Maps n’est pas définie. Veuillez ajouter VITE_GOOGLE_MAPS_API_KEY dans le fichier .env.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -75,11 +112,11 @@ export default function Results() {
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center space-x-4">
           <span className="text-sm text-gray-700">Spécialité :</span>
           <span className="text-sm text-gray-900 bg-white px-2 py-1 rounded border border-gray-300">
-            {type}
+            {type || 'Tous'}
           </span>
           <span className="text-sm text-gray-700">Localisation :</span>
           <span className="text-sm text-gray-900 bg-white px-2 py-1 rounded border border-gray-300">
-            {location}
+            {location || 'Non spécifiée'}
           </span>
         </div>
       </div>
@@ -87,7 +124,7 @@ export default function Results() {
       {/* Contenu principal */}
       <div className="py-6">
         <h2 className="text-xl font-bold text-black mb-4 text-center">
-          Courtiers en {type} disponibles près de {location}
+          Courtiers en {type || 'tous domaines'} disponibles près de {location || 'votre position'}
         </h2>
         <div className="flex flex-col lg:flex-row gap-6 ml-20 mr-20">
           {/* Liste des courtiers */}
@@ -116,8 +153,8 @@ export default function Results() {
                         </div>
                       )}
                       <div className="ml-2.5">
-                      <h3 className="font-roboto font-semibold text-xl text-[#244257]">
-                        {courtier.firstName} {courtier.lastName}
+                        <h3 className="font-roboto font-semibold text-xl text-[#244257]">
+                          {courtier.firstName} {courtier.lastName}
                         </h3>
                         <div className="flex items-center space-x-1 mt-1">
                           <FaMapPin className="h-4 w-4 text-gray-600" />
@@ -141,7 +178,7 @@ export default function Results() {
                           VOIR PROFIL
                         </button>
                         <button className="w-[270px] py-2 bg-[#244257] text-white rounded-2xl text-base font-medium hover:bg-blue-800">
-                        PRENDRE RENDEZ-VOUS
+                          PRENDRE RENDEZ-VOUS
                         </button>
                       </div>
                       <div className="w-[150px] flex justify-center">
@@ -160,18 +197,23 @@ export default function Results() {
           {/* Carte Google Maps */}
           <div className="ml-14 flex-1">
             <div className="bg-white rounded border border-gray-200 h-[calc(100vh-200px)]">
-              <LoadScript googleMapsApiKey="TA_CLE_API_GOOGLE_MAPS">
+              <LoadScript googleMapsApiKey={googleMapsApiKey}>
                 <GoogleMap
                   mapContainerStyle={mapContainerStyle}
-                  center={defaultCenter}
+                  center={mapCenter}
                   zoom={12}
                 >
-                  {courtiers.map((courtier) => (
-                    <Marker
-                      key={courtier.id}
-                      position={defaultCenter} // À ajuster avec géocodage
-                    />
-                  ))}
+                  {courtiers
+                    .filter((courtier) => courtier.location) // S'assurer que location existe
+                    .map((courtier) => (
+                      <Marker
+                        key={courtier.id}
+                        position={{
+                          lat: courtier.location.lat,
+                          lng: courtier.location.lng,
+                        }}
+                      />
+                    ))}
                 </GoogleMap>
               </LoadScript>
             </div>
