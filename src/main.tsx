@@ -7,7 +7,7 @@ import Login from './pages/Login.tsx';
 import ClientDashboard from './pages/ClientDashboard.tsx';
 import BrokerDashboard from './pages/BrokerDashboard.tsx';
 import Signup from './pages/Signup.tsx';
-import BrokerSignup from './pages/BrokerSignup';
+import BrokerSignup from './pages/BrokerSignup.tsx';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(
