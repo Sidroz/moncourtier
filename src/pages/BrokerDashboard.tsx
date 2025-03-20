@@ -1,8 +1,47 @@
-import React from 'react';
-import { Calendar, Clock, FileText, User, Settings, LogOut, Users, BarChart as ChartBar } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth, db } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { Calendar, Clock, FileText, Settings, LogOut, Users, BarChart as ChartBar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function BrokerDashboard() {
+  const [user, loading, error] = useAuthState(auth);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    if (!loading && user) {
+      const checkAuthorization = async () => {
+        try {
+          const userDocRef = doc(db, 'courtiers', user.uid);
+          const userDoc = await getDoc(userDocRef);
+          if (userDoc.exists() && userDoc.data().type === 'courtier') {
+            setIsAuthorized(true);
+          }
+        } catch (err) {
+          console.error('Erreur lors de la vérification de l\'autorisation:', err);
+        } finally {
+          setAuthChecked(true);
+        }
+      };
+      checkAuthorization();
+    }
+  }, [user, loading]);
+
+  if (loading || !authChecked) {
+    return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
+  }
+
+  if (error) {
+    console.error("Erreur lors de la vérification de l\'authentification:", error);
+    return <div className="min-h-screen flex items-center justify-center">Erreur: {error.message}</div>;
+  }
+
+  if (!isAuthorized) {
+    return <div className="min-h-screen flex items-center justify-center">Accès refusé. Vous n'êtes pas autorisé à voir cette page.</div>;
+  }
+
   // Mock data for demonstration
   const todayAppointments = [
     {
@@ -53,26 +92,30 @@ export default function BrokerDashboard() {
           <div className="md:col-span-1">
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex flex-col space-y-4">
-                <button className="flex items-center space-x-2 text-blue-600 font-medium">
+                <Link to="/courtier/calendar" className="flex items-center space-x-2 text-blue-600 font-medium">
                   <Calendar className="h-5 w-5" />
                   <span>Agenda</span>
-                </button>
-                <button className="flex items-center space-x-2 text-gray-600 hover:text-blue-600">
+                </Link>
+                <Link to="/courtier/availability" className="flex items-center space-x-2 text-gray-600 hover:text-blue-600">
+                  <Clock className="h-5 w-5" />
+                  <span>Disponibilités</span>
+                </Link>
+                <Link to="/courtier/dashboard" className="flex items-center space-x-2 text-gray-600 hover:text-blue-600">
                   <Users className="h-5 w-5" />
                   <span>Clients</span>
-                </button>
-                <button className="flex items-center space-x-2 text-gray-600 hover:text-blue-600">
+                </Link>
+                <Link to="/courtier/documents" className="flex items-center space-x-2 text-gray-600 hover:text-blue-600">
                   <FileText className="h-5 w-5" />
                   <span>Documents</span>
-                </button>
-                <button className="flex items-center space-x-2 text-gray-600 hover:text-blue-600">
+                </Link>
+                <Link to="/courtier/stats" className="flex items-center space-x-2 text-gray-600 hover:text-blue-600">
                   <ChartBar className="h-5 w-5" />
                   <span>Statistiques</span>
-                </button>
-                <button className="flex items-center space-x-2 text-gray-600 hover:text-blue-600">
+                </Link>
+                <Link to="/courtier/settings" className="flex items-center space-x-2 text-gray-600 hover:text-blue-600">
                   <Settings className="h-5 w-5" />
                   <span>Paramètres</span>
-                </button>
+                </Link>
               </div>
             </div>
           </div>
