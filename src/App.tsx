@@ -1,17 +1,72 @@
-import React, { useState } from 'react';
-import { Search, MapPin, Calendar, Clock, Building2, Shield, Wallet, CheckCircle, ArrowRight, Briefcase, Calculator, PiggyBank, User, Weight } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Search, MapPin, Calendar, Clock, Building2, Shield, Wallet, CheckCircle, ArrowRight, Briefcase, Calculator, PiggyBank, User } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
+import { Autocomplete, useJsApiLoader } from '@react-google-maps/api';
+import { auth } from './firebase'; // Assure-toi que le chemin est correct
+import { useAuthState } from 'react-firebase-hooks/auth';
 
 type BrokerType = 'assurance' | 'realestate' | 'credit' | 'retirement' | 'tax' | 'recruitment' | 'all';
 
 function App() {
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+    libraries: ['places'],
+  });
+
+  // Vérifier l'état de l'utilisateur connecté
+  const [user, loading, error] = useAuthState(auth);
+
   const [selectedType, setSelectedType] = useState<BrokerType>('all');
   const [searchLocation, setSearchLocation] = useState('');
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const navigate = useNavigate();
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+
+  const handlePlaceChanged = () => {
+    const place = autocompleteRef.current?.getPlace();
+    if (place && place.geometry && place.geometry.location) {
+      const lat = place.geometry.location.lat();
+      const lng = place.geometry.location.lng();
+      setCoordinates({ lat, lng });
+      setSearchLocation(place.formatted_address || '');
+    } else {
+      alert('Impossible de récupérer les coordonnées de l’adresse. Veuillez sélectionner une adresse valide.');
+    }
+  };
 
   const handleSearch = () => {
-    navigate(`/results?location=${encodeURIComponent(searchLocation)}&type=${selectedType}`);
+    if (!searchLocation) {
+      alert('Veuillez entrer une localisation.');
+      return;
+    }
+    const queryParams = new URLSearchParams({
+      location: searchLocation,
+      type: selectedType,
+      ...(coordinates ? { lat: coordinates.lat.toString(), lng: coordinates.lng.toString() } : {}),
+    });
+    navigate(`/results?${queryParams.toString()}`);
   };
+
+  if (!isLoaded) {
+    return <div className="min-h-screen flex items-center justify-center">Chargement de Google Maps...</div>;
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Erreur lors du chargement de Google Maps: {loadError.message}
+      </div>
+    );
+  }
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
+  }
+
+  if (error) {
+    console.error('Erreur lors de la vérification de l’authentification:', error);
+    return <div className="min-h-screen flex items-center justify-center">Erreur: {error.message}</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -30,18 +85,17 @@ function App() {
                 <a href="#advantages" className="text-gray-700 hover:text-blue-600">Avantages</a>
               </nav>
               <Link 
-                to="/login"
+                to={user ? "/client" : "/login"} // Redirige vers /dashboard si connecté, sinon /login
                 className="flex items-center space-x-2 text-gray-700 hover:text-blue-600"
               >
                 <User className="h-5 w-5" />
-                <span>Connexion</span>
+                <span>{user ? "Espace Client" : "Connexion"}</span> {/* Change le texte selon l'état */}
               </Link>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Rest of the component remains unchanged */}
       {/* Hero Section */}
       <div className="bg-gradient-to-br from-indigo-950 to-indigo-950 pt-24 pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -59,13 +113,19 @@ function App() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="relative">
                 <MapPin className="absolute left-3 top-3 h-6 w-6 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Où ? (ville, code postal)"
-                  className="pl-12 w-full h-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={searchLocation}
-                  onChange={(e) => setSearchLocation(e.target.value)}
-                />
+                <Autocomplete
+                  onLoad={(autocomplete) => (autocompleteRef.current = autocomplete)}
+                  onPlaceChanged={handlePlaceChanged}
+                  restrictions={{ country: 'fr' }}
+                >
+                  <input
+                    type="text"
+                    placeholder="Où ? (ville, code postal)"
+                    className="pl-12 w-full h-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={searchLocation}
+                    onChange={(e) => setSearchLocation(e.target.value)}
+                  />
+                </Autocomplete>
               </div>
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-6 w-6 text-gray-400" />

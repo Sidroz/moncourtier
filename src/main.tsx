@@ -8,6 +8,8 @@ import BrokerDashboard from './pages/BrokerDashboard.tsx';
 import Signup from './pages/Signup.tsx';
 import BrokerSignup from './pages/BrokerSignup.tsx';
 import Client from './pages/ClientDashboard.tsx';
+import ClientSettings from './pages/ClientSettings.tsx';
+import ClientSecurity from './pages/ClientSecurity.tsx';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(
@@ -15,13 +17,14 @@ createRoot(document.getElementById('root')!).render(
     <Router>
       <Routes>
         <Route path="/" element={<App />} />
-        <Route path="/results" element={<Results />} />
         <Route path="/login" element={<Login />} />
         <Route path="/courtier/dashboard" element={<BrokerDashboard />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/broker-signup" element= {<BrokerSignup />} /> // Nouvelle route
-        <Route path="/results" element= {<Results />} /> // Nouvelle route
-        <Route path="/client" element= {<Client />} /> // Nouvelle route
+        <Route path="/broker-signup" element={<BrokerSignup />} />
+        <Route path="/client" element={<Client />} />
+        <Route path="/client/settings" element={<ClientSettings />} />
+        <Route path="/results" element={<Results />} />
+        <Route path="/client/security" element={<ClientSecurity />} />
       </Routes>
     </Router>
   </StrictMode>

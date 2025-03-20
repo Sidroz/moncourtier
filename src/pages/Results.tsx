@@ -43,7 +43,7 @@ export default function Results() {
         }
 
         // Récupérer les courtiers correspondant au type
-        const courtiersQuery = type
+        const courtiersQuery = type && type !== 'all'
           ? query(collection(db, 'courtiers'), where('specialties', 'array-contains', type))
           : query(collection(db, 'courtiers'));
 
