@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { LoadScript } from '@react-google-maps/api';
 import App from './App.tsx';
 import Results from './pages/Results.tsx';
 import Login from './pages/Login.tsx';
@@ -16,24 +17,33 @@ import BrokerAvailability from './pages/BrokerAvailability.tsx';
 import AppointmentBooking from './pages/AppointmentBooking.tsx';
 import './index.css';
 
+const libraries: ("places" | "drawing" | "geometry" | "visualization")[] = ["places"];
+const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
+if (!googleMapsApiKey) {
+  console.error('La clé API Google Maps n\'est pas définie. Veuillez ajouter VITE_GOOGLE_MAPS_API_KEY dans le fichier .env');
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <Router>
-      <Routes>
-        <Route path="/" element={<App />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/courtier/dashboard" element={<BrokerDashboard />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/broker-signup" element={<BrokerSignup />} />
-        <Route path="/client" element={<ClientDashboard />} />
-        <Route path="/client/settings" element={<ClientSettings />} />
-        <Route path="/results" element={<Results />} />
-        <Route path="/client/security" element={<ClientSecurity />} />
-        <Route path="/client/appointments" element={<ClientAppointments />} />
-        <Route path="/courtier/calendar" element={<BrokerCalendar />} />
-        <Route path="/courtier/availability" element={<BrokerAvailability />} />
-        <Route path="/appointment-booking/:brokerId" element={<AppointmentBooking />} />
-      </Routes>
-    </Router>
+    <LoadScript googleMapsApiKey={googleMapsApiKey} libraries={libraries}>
+      <Router>
+        <Routes>
+          <Route path="/" element={<App />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/courtier/dashboard" element={<BrokerDashboard />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/broker-signup" element={<BrokerSignup />} />
+          <Route path="/client" element={<ClientDashboard />} />
+          <Route path="/client/settings" element={<ClientSettings />} />
+          <Route path="/results" element={<Results />} />
+          <Route path="/client/security" element={<ClientSecurity />} />
+          <Route path="/client/appointments" element={<ClientAppointments />} />
+          <Route path="/courtier/calendar" element={<BrokerCalendar />} />
+          <Route path="/courtier/availability" element={<BrokerAvailability />} />
+          <Route path="/appointment-booking/:brokerId" element={<AppointmentBooking />} />
+        </Routes>
+      </Router>
+    </LoadScript>
   </StrictMode>
 );
