@@ -175,7 +175,7 @@ function ResultsContent() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-      <header className="bg-white fixed shadow-sm w-3/5 z-10 rounded-md left-1/2 -translate-x-1/2 mt-2">
+      <header className="bg-white shadow-sm w-3/5 z-10 rounded-md mx-auto mb-6">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-2">
@@ -200,7 +200,7 @@ function ResultsContent() {
         </div>
       </header>
 
-      <div className="bg-white border-b border-gray-100 mt-[100px]">
+      <div className="bg-white border-b border-gray-100 mb-6">
         <div className="max-w-[1920px] mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
@@ -298,7 +298,7 @@ function ResultsContent() {
 
       <div className="py-6">
         <h2 className="text-xl text-black mb-4 text-center">
-          Courtiers en <span className="font-bold">{editedType ? capitalizeFirstLetter(editedType) : 'tous domaines'}</span> disponibles près de <span className="font-bold">{location ? extractCity(location) : 'votre position'}</span>
+          Courtiers en <span className="font-roboto font-bold">{editedType ? capitalizeFirstLetter(editedType) : 'tous domaines'}</span> disponibles près de <span className="font-roboto font-bold">{location ? extractCity(location) : 'votre position'}</span>
         </h2>
         <div className="max-w-[1920px] mx-auto px-4">
           <div className="flex flex-col lg:flex-row gap-6">
@@ -637,7 +637,7 @@ export default function Results() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-      <header className="bg-white fixed shadow-sm w-3/5 z-10 rounded-md left-1/2 -translate-x-1/2 mt-2">
+      <header className="bg-white shadow-sm w-3/5 z-10 rounded-md mx-auto mb-6">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-2">
@@ -662,7 +662,7 @@ export default function Results() {
         </div>
       </header>
 
-      <div className="bg-white border-b border-gray-100 mt-[100px]">
+      <div className="bg-white border-b border-gray-100 mb-6">
         <div className="max-w-[1920px] mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
@@ -759,8 +759,8 @@ export default function Results() {
       </div>
 
       <div className="py-6">
-        <h2 className="text-xl text-black mb-4 text-center">
-          Courtiers en <span className="font-bold">{editedType ? capitalizeFirstLetter(editedType) : 'tous domaines'}</span> disponibles près de <span className="font-bold">{location ? extractCity(location) : 'votre position'}</span>
+        <h2 className="text-xl text-black mb-4 text-center font-roboto">
+          Courtiers en <span className="font-roboto font-light">{editedType ? capitalizeFirstLetter(editedType) : 'tous domaines'}</span> disponibles près de <span className="font-roboto font-bold">{location ? extractCity(location) : 'votre position'}</span>
         </h2>
         <div className="max-w-[1920px] mx-auto px-4">
           <div className="flex flex-col lg:flex-row gap-6">
