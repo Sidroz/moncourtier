@@ -2,16 +2,31 @@ import { useState, useEffect } from 'react';
 import { Calendar, HelpCircle, LogOut, User, Plus } from 'lucide-react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 
+interface Courtier {
+  id: string;
+  firstName: string;
+  lastName: string;
+  photoUrl?: string;
+}
+
 interface Appointment {
-  id: number;
-  title: string;
+  id: string;
+  title?: string;
   date: string;
-  brokerName: string;
-  brokerPhotoURL: string;
+  startTime: string;
+  endTime: string;
+  status: 'pending' | 'confirmed' | 'cancelled';
+  brokerId: string;
+  clientId: string;
+  clientName?: string;
+  clientEmail?: string;
+  brokerName?: string;
+  brokerPhotoURL?: string;
+  createdAt?: any;
 }
 
 export default function ClientDashboard() {
@@ -23,21 +38,9 @@ export default function ClientDashboard() {
   } | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [authChecked, setAuthChecked] = useState(false);
+  const [courtiers, setCourtiers] = useState<{[key: string]: Courtier}>({});
   const navigate = useNavigate();
   const location = useLocation();
-
-  useEffect(() => {
-    // Fictitious appointments data
-    const mockAppointments: Appointment[] = [
-      { id: 1, title: 'Meeting with Alex', date: '2025-03-22', brokerName: 'Alex', brokerPhotoURL: 'https://example.com/path/to/alex-photo.jpg' },
-      { id: 2, title: 'Dentist Appointment', date: '2025-03-23', brokerName: 'Dr. Smith', brokerPhotoURL: 'https://example.com/path/to/smith-photo.jpg' },
-      { id: 3, title: 'Lunch with Sarah', date: '2025-03-24', brokerName: 'Sarah', brokerPhotoURL: 'https://example.com/path/to/sarah-photo.jpg' },
-    ];
-    
-    // Sort appointments by date
-    const sortedAppointments = mockAppointments.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    setAppointments(sortedAppointments);
-  }, []);
 
   useEffect(() => {
     // Attendre que le chargement de l'authentification soit terminé
@@ -70,6 +73,91 @@ export default function ClientDashboard() {
       };
       
       fetchUserData();
+    }
+  }, [user, authChecked]);
+
+  // Récupérer les rendez-vous du client
+  useEffect(() => {
+    if (user && authChecked) {
+      const fetchAppointments = async () => {
+        try {
+          const appointmentsRef = collection(db, 'appointments');
+          console.log("Recherche des rendez-vous pour l'utilisateur:", user.uid);
+          
+          // D'abord vérifier si la collection appointments contient des données
+          const allAppointmentsSnapshot = await getDocs(appointmentsRef);
+          console.log("Nombre total de rendez-vous dans la collection:", allAppointmentsSnapshot.size);
+          if (allAppointmentsSnapshot.size > 0) {
+            console.log("Exemple de rendez-vous:", allAppointmentsSnapshot.docs[0].data());
+          }
+          
+          // Récupérer les rendez-vous où le client est l'utilisateur actuel (sans filtrer sur le statut)
+          const appointmentsQuery = query(
+            appointmentsRef, 
+            where('clientId', '==', user.uid)
+          );
+          
+          const querySnapshot = await getDocs(appointmentsQuery);
+          console.log("Nombre de rendez-vous trouvés:", querySnapshot.size);
+          
+          const appointmentsData = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            console.log("Rendez-vous trouvé:", { id: doc.id, ...data });
+            return {
+              id: doc.id,
+              ...data,
+            };
+          }) as Appointment[];
+          
+          // Récupérer les données des courtiers pour chaque rendez-vous
+          const brokersCache: {[key: string]: Courtier} = {};
+          
+          for (const appointment of appointmentsData) {
+            if (!brokersCache[appointment.brokerId]) {
+              // Récupérer les informations du courtier
+              const brokerDocRef = doc(db, 'courtiers', appointment.brokerId);
+              const brokerDoc = await getDoc(brokerDocRef);
+              
+              if (brokerDoc.exists()) {
+                const brokerData = brokerDoc.data() as Courtier;
+                brokersCache[appointment.brokerId] = {
+                  id: brokerDoc.id,
+                  firstName: brokerData.firstName || '',
+                  lastName: brokerData.lastName || '',
+                  photoUrl: brokerData.photoUrl || ''
+                };
+                console.log("Données du courtier récupérées:", brokerData);
+              } else {
+                console.log("Courtier non trouvé dans Firestore:", appointment.brokerId);
+              }
+            }
+            
+            // Ajouter les informations du courtier au rendez-vous
+            const broker = brokersCache[appointment.brokerId];
+            if (broker) {
+              appointment.brokerName = `${broker.firstName} ${broker.lastName}`.trim();
+              appointment.brokerPhotoURL = broker.photoUrl;
+              console.log("Rendez-vous avec infos courtier:", appointment);
+            }
+          }
+          
+          // Trier les rendez-vous par date (du plus proche au plus éloigné)
+          const sortedAppointments = appointmentsData.sort((a, b) => {
+            const dateA = new Date(`${a.date}T${a.startTime}`);
+            const dateB = new Date(`${b.date}T${b.startTime}`);
+            return dateA.getTime() - dateB.getTime();
+          });
+          
+          console.log("Rendez-vous triés et prêts à être affichés:", sortedAppointments);
+          setAppointments(sortedAppointments);
+          console.log("Courtiers récupérés:", brokersCache);
+          setCourtiers(brokersCache);
+        } catch (err) {
+          console.error('Erreur lors de la récupération des rendez-vous:', err);
+        }
+      };
+      
+      fetchAppointments();
     }
   }, [user, authChecked]);
 
@@ -108,7 +196,7 @@ export default function ClientDashboard() {
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Calendar className="h-8 w-8" />
-            <span className="text-2xl font-bold">MonCourtier</span>
+            <Link to="/" className="text-2xl font-bold hover:text-gray-200 transition-colors">MonCourtier</Link>
           </div>
           <div className="flex items-center space-x-4">
             <nav className="flex space-x-4">
@@ -187,25 +275,55 @@ export default function ClientDashboard() {
                 {appointments.length}
               </div>
             </div>
-            <ul className="space-y-4">
-              {appointments.map(appointment => (
-                <li key={appointment.id} className="flex items-center space-x-4">
-                  <img 
-                    src={appointment.brokerPhotoURL || 'https://example.com/path/to/default-photo.jpg'} 
-                    alt="Courtier"
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                  <div>
-                    <p className="text-gray-700 font-semibold">{appointment.brokerName}</p>
-                    <p className="text-gray-500 text-sm">{formatDate(appointment.date)}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <button className="mt-6 w-full flex items-center justify-center space-x-2 text-blue-600 hover:text-blue-700 font-medium py-2 px-4 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
-              <Plus className="h-5 w-5" />
-              <span>Prendre un rendez-vous</span>
-            </button>
+            {appointments.length === 0 ? (
+              <p className="text-gray-600 text-center mb-10">
+                Vous n'avez pas de rendez-vous à venir. 
+                <br /><span className="text-xs mt-2 block">Vérifiez la console pour le débogage.</span>
+              </p>
+            ) : (
+              <ul className="space-y-4">
+                {appointments.map(appointment => (
+                  <li key={appointment.id} className="flex items-center space-x-4">
+                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                      {appointment.brokerPhotoURL ? (
+                        <img 
+                          src={appointment.brokerPhotoURL} 
+                          alt={appointment.brokerName || "Courtier"}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User className="h-6 w-6 text-gray-500" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-gray-700 font-semibold">{appointment.brokerName || "Courtier"}</p>
+                      <p className="text-gray-500 text-sm">{formatDate(appointment.date)} - {appointment.startTime}</p>
+                      {appointment.status === 'pending' && (
+                        <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800">
+                          En attente
+                        </span>
+                      )}
+                      {appointment.status === 'confirmed' && (
+                        <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800">
+                          Confirmé
+                        </span>
+                      )}
+                      {appointment.status === 'cancelled' && (
+                        <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800">
+                          Annulé
+                        </span>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Link to="/search">
+              <button className="mt-6 w-full flex items-center justify-center space-x-2 text-blue-600 hover:text-blue-700 font-medium py-2 px-4 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
+                <Plus className="h-5 w-5" />
+                <span>Prendre un rendez-vous</span>
+              </button>
+            </Link>
           </div>
 
           {/* Card 2: Liste des courtiers */}
@@ -214,7 +332,30 @@ export default function ClientDashboard() {
               <h2 className="text-lg font-semibold text-gray-900">Liste des Courtiers</h2>
               <User className="h-6 w-6 text-[#244257]" />
             </div>
-            <p className="text-gray-600 mb-4 text-center">Vous n'avez pas de Courtier enregistré.</p>
+            {Object.keys(courtiers).length === 0 ? (
+              <p className="text-gray-600 mb-4 text-center">Vous n'avez pas de Courtier enregistré.</p>
+            ) : (
+              <ul className="space-y-4">
+                {Object.values(courtiers).map((courtier) => (
+                  <li key={courtier.id} className="flex items-center space-x-4">
+                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                      {courtier.photoUrl ? (
+                        <img 
+                          src={courtier.photoUrl} 
+                          alt={`${courtier.firstName} ${courtier.lastName}`}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User className="h-6 w-6 text-gray-500" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-gray-700 font-semibold">{courtier.firstName} {courtier.lastName}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
             <button className="mt-6 w-full py-2 px-4 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
               Voir tous mes courtiers
             </button>

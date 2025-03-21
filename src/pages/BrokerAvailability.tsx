@@ -54,6 +54,17 @@ const dayTranslations = {
   sunday: "Dimanche"
 };
 
+// Ordre des jours de la semaine pour l'affichage
+const orderedDays: (keyof WeeklyAvailability)[] = [
+  "monday", 
+  "tuesday", 
+  "wednesday", 
+  "thursday", 
+  "friday", 
+  "saturday", 
+  "sunday"
+];
+
 export default function BrokerAvailability() {
   const [user] = useAuthState(auth);
   const [availability, setAvailability] = useState<WeeklyAvailability>(defaultWeeklyAvailability);
@@ -174,17 +185,19 @@ export default function BrokerAvailability() {
             Ces créneaux seront proposés à vos clients lors de la prise de rendez-vous.
           </p>
           
-          {Object.entries(availability).map(([day, dayData]) => (
+          {orderedDays.map((day) => {
+            const dayData = availability[day];
+            return (
             <div key={day} className="border-b border-gray-200 py-4 last:border-b-0">
               <div className="flex items-center mb-2">
                 <label className="inline-flex items-center">
                   <input
                     type="checkbox"
                     checked={dayData.enabled}
-                    onChange={() => handleDayToggle(day as keyof WeeklyAvailability)}
+                    onChange={() => handleDayToggle(day)}
                     className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
                   />
-                  <span className="ml-2 font-medium w-24">{dayTranslations[day as keyof typeof dayTranslations]}</span>
+                  <span className="ml-2 font-medium w-24">{dayTranslations[day]}</span>
                 </label>
               </div>
               
@@ -195,18 +208,18 @@ export default function BrokerAvailability() {
                       <input
                         type="time"
                         value={slot.start}
-                        onChange={(e) => handleTimeChange(day as keyof WeeklyAvailability, index, 'start', e.target.value)}
+                        onChange={(e) => handleTimeChange(day, index, 'start', e.target.value)}
                         className="rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
                       />
                       <span>à</span>
                       <input
                         type="time"
                         value={slot.end}
-                        onChange={(e) => handleTimeChange(day as keyof WeeklyAvailability, index, 'end', e.target.value)}
+                        onChange={(e) => handleTimeChange(day, index, 'end', e.target.value)}
                         className="rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
                       />
                       <button
-                        onClick={() => handleRemoveTimeSlot(day as keyof WeeklyAvailability, index)}
+                        onClick={() => handleRemoveTimeSlot(day, index)}
                         className="text-red-500 hover:text-red-700"
                         disabled={dayData.timeSlots.length === 1}
                       >
@@ -216,7 +229,7 @@ export default function BrokerAvailability() {
                   ))}
                   
                   <button
-                    onClick={() => handleAddTimeSlot(day as keyof WeeklyAvailability)}
+                    onClick={() => handleAddTimeSlot(day)}
                     className="flex items-center text-blue-600 hover:text-blue-800 mt-2"
                   >
                     <Plus className="h-4 w-4 mr-1" />
@@ -225,7 +238,7 @@ export default function BrokerAvailability() {
                 </div>
               )}
             </div>
-          ))}
+          )})}
         </div>
         
         <div className="flex justify-end">

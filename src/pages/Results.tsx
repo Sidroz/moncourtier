@@ -47,9 +47,22 @@ export default function Results() {
     lat: 44.837789,
     lng: -0.57918,
   });
+  const [hoveredCourtierId, setHoveredCourtierId] = useState<string | null>(null);
+  const [mapZoom, setMapZoom] = useState(12);
   const [user] = useAuthState(auth);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const isInitialMount = useRef(true);
+
+  // Fonction pour centrer la carte sur un courtier
+  const centerMapOnCourtier = (courtier: Courtier) => {
+    if (courtier.location) {
+      setMapCenter({
+        lat: courtier.location.lat,
+        lng: courtier.location.lng,
+      });
+      setMapZoom(17); // Zoom plus proche lorsqu'on survole un courtier
+    }
+  };
 
   // Mettre à jour les valeurs éditées quand les paramètres d'URL changent
   useEffect(() => {
@@ -151,12 +164,18 @@ export default function Results() {
 
   const getSlotsByDay = (slots: AvailableSlot[] = []) => {
     const grouped: { [key: string]: AvailableSlot[] } = {};
+    
+    // D'abord, regrouper tous les créneaux par date
     slots.forEach(slot => {
-      if (!grouped[slot.date]) {
-        grouped[slot.date] = [];
+      // Ne pas ajouter les jours vides (isEmpty)
+      if (!slot.isEmpty) {
+        if (!grouped[slot.date]) {
+          grouped[slot.date] = [];
+        }
+        grouped[slot.date].push(slot);
       }
-      grouped[slot.date].push(slot);
     });
+    
     return grouped;
   };
 
@@ -184,7 +203,7 @@ export default function Results() {
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-2">
               <Calendar className="h-8 w-8 text-blue-950" />
-              <span className="text-2xl font-bold text-blue-950">MonCourtier</span>
+              <Link to="/" className="text-2xl font-bold text-blue-950 hover:text-blue-700 transition-colors">MonCourtier</Link>
             </div>
             <div className="flex items-center space-x-8">
               <nav className="hidden md:flex space-x-8">
@@ -320,6 +339,14 @@ export default function Results() {
                   <div
                     key={courtier.id}
                     className="bg-white rounded-lg shadow-md p-6 transition-all duration-300 hover:shadow-xl hover:scale-[1.01] hover:border-blue-200 border border-transparent"
+                    onMouseEnter={() => {
+                      setHoveredCourtierId(courtier.id);
+                      centerMapOnCourtier(courtier);
+                    }}
+                    onMouseLeave={() => {
+                      setHoveredCourtierId(null);
+                      setMapZoom(12); // Retour au zoom initial
+                    }}
                   >
                     <div className="flex">
                       <div className="w-36">
@@ -410,8 +437,12 @@ export default function Results() {
 
                               return (
                                 <div className="flex space-x-3 w-full justify-center">
-                                  {Object.entries(slotsByDay).slice(0, isExpanded ? undefined : 5).map(([date, slots]) => {
+                                  {Object.entries(slotsByDay)
+                                    .filter(([_, slots]) => slots.length > 0)
+                                    .slice(0, 5)
+                                    .map(([date, slots]) => {
                                     const dayDate = new Date(date);
+                                    
                                     return (
                                       <div key={date} className="flex flex-col items-center min-w-[90px]">
                                         <div className="text-sm text-gray-900 font-medium mb-1.5">
@@ -421,21 +452,15 @@ export default function Results() {
                                           </div>
                                         </div>
                                         <div className="w-full flex flex-col gap-2">
-                                          {slots.length > 0 ? (
-                                            slots.slice(0, isExpanded ? undefined : 4).map((slot, index) => (
-                                              <Link
-                                                key={index}
-                                                to={`/appointment-booking/${courtier.id}?date=${slot.date}&time=${slot.startTime}`}
-                                                className="text-center py-1.5 px-2 text-sm bg-blue-50 text-[#244257] hover:bg-[#244257] hover:text-white rounded-md transition-all duration-200 shadow-sm hover:shadow-md min-w-[80px]"
-                                              >
-                                                {slot.startTime}
-                                              </Link>
-                                            ))
-                                          ) : (
-                                            <div className="text-xs text-gray-500 text-center py-1.5 px-2 bg-gray-50 rounded-md">
-                                              -
-                                            </div>
-                                          )}
+                                          {slots.slice(0, isExpanded ? undefined : 4).map((slot, index) => (
+                                            <Link
+                                              key={index}
+                                              to={`/appointment-booking/${courtier.id}?date=${slot.date}&time=${slot.startTime}`}
+                                              className="text-center py-1.5 px-2 text-sm bg-blue-50 text-[#244257] hover:bg-[#244257] hover:text-white rounded-md transition-all duration-200 shadow-sm hover:shadow-md min-w-[80px]"
+                                            >
+                                              {slot.startTime}
+                                            </Link>
+                                          ))}
                                         </div>
                                       </div>
                                     );
@@ -452,7 +477,7 @@ export default function Results() {
                               }))}
                               className="mt-2 text-sm text-[#244257] hover:text-blue-700 font-medium"
                             >
-                              {expandedSlots[courtier.id] ? 'Voir moins d\'horaires' : 'Voir plus d\'horaires'}
+                              {expandedSlots[courtier.id] ? 'Afficher moins d\'horaires' : 'Afficher plus d\'horaires'}
                             </button>
                           )}
                         </div>
@@ -468,7 +493,7 @@ export default function Results() {
                 <GoogleMap
                   mapContainerStyle={mapContainerStyle}
                   center={mapCenter}
-                  zoom={12}
+                  zoom={mapZoom}
                 >
                   {courtiers.map((courtier) => (
                     <Marker
@@ -478,6 +503,16 @@ export default function Results() {
                         lng: courtier.location.lng,
                       }}
                       title={`${courtier.firstName} ${courtier.lastName}`}
+                      icon={{
+                        url: hoveredCourtierId === courtier.id 
+                          ? "http://maps.google.com/mapfiles/ms/icons/blue-dot.png" 
+                          : "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
+                        scaledSize: new google.maps.Size(
+                          hoveredCourtierId === courtier.id ? 40 : 30, 
+                          hoveredCourtierId === courtier.id ? 40 : 30
+                        )
+                      }}
+                      animation={hoveredCourtierId === courtier.id ? google.maps.Animation.BOUNCE : undefined}
                     />
                   ))}
                 </GoogleMap>

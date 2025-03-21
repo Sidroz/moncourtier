@@ -56,6 +56,7 @@ export interface AvailableSlot {
   startTime: string; // Format "HH:mm"
   endTime: string; // Format "HH:mm"
   formattedDate: string; // Format localisé pour l'affichage
+  isEmpty?: boolean; // Indique si le jour n'a pas de créneaux disponibles
 }
 
 // Jours de la semaine en français
@@ -159,31 +160,32 @@ export const deleteAppointment = async (id: string): Promise<boolean> => {
   }
 };
 
-// Fonction pour obtenir les créneaux disponibles d'un courtier pour les 7 prochains jours
+// Fonction pour obtenir les créneaux disponibles d'un courtier pour les 14 prochains jours (2 semaines)
 export const getAvailableSlotsForNext7Days = async (brokerId: string): Promise<AvailableSlot[]> => {
   try {
     // Récupérer les disponibilités du courtier
     const availability = await getBrokerAvailability(brokerId);
     if (!availability) return [];
     
-    // Récupérer les rendez-vous existants pour les 7 prochains jours
-    const today = startOfDay(new Date());
-    const nextWeek = addDays(today, 7);
-    const appointments = await getBrokerAppointments(brokerId, today, nextWeek);
+    // Récupérer les rendez-vous existants pour les 14 prochains jours
+    const now = new Date(); // Heure actuelle
+    const today = startOfDay(now);
+    const twoWeeksLater = addDays(today, 14); // Étendu à 14 jours au lieu de 7
+    const appointments = await getBrokerAppointments(brokerId, today, twoWeeksLater);
     
     const availableSlots: AvailableSlot[] = [];
     
-    // Pour chaque jour des 7 prochains jours
-    for (let i = 0; i < 7; i++) {
+    // Pour chaque jour des 14 prochains jours
+    for (let i = 0; i < 14; i++) { // Boucle sur 14 jours au lieu de 7
       const currentDate = addDays(today, i);
       const dayOfWeek = weekDays[currentDate.getDay()];
       const dayAvailability = availability[dayOfWeek as keyof WeeklyAvailability];
       
+      const dateStr = format(currentDate, 'yyyy-MM-dd');
+      const formattedDate = format(currentDate, 'EEEE dd MMMM', { locale: fr });
+      
       // Si le jour est activé et a des créneaux
-      if (dayAvailability.enabled && dayAvailability.timeSlots.length > 0) {
-        const dateStr = format(currentDate, 'yyyy-MM-dd');
-        const formattedDate = format(currentDate, 'EEEE dd MMMM', { locale: fr });
-        
+      if (dayAvailability && dayAvailability.enabled && dayAvailability.timeSlots.length > 0) {
         // Pour chaque créneau horaire disponible ce jour-là
         for (const slot of dayAvailability.timeSlots) {
           // Diviser le créneau en plages de 30 minutes
@@ -199,8 +201,20 @@ export const getAvailableSlotsForNext7Days = async (brokerId: string): Promise<A
               const startTimeStr = format(currentSlotStart, 'HH:mm');
               const endTimeStr = format(currentSlotEnd, 'HH:mm');
               
+              // Créer une date combinant la date et l'heure du créneau
+              const slotDateTime = new Date(
+                currentDate.getFullYear(),
+                currentDate.getMonth(),
+                currentDate.getDate(),
+                currentSlotStart.getHours(),
+                currentSlotStart.getMinutes()
+              );
+              
+              // Vérifier si le créneau est dans le futur (pas déjà passé)
+              const isInFuture = slotDateTime > now;
+              
               // Vérifier si ce créneau n'est pas déjà pris par un rendez-vous
-              const isSlotAvailable = !appointments.some(appointment => {
+              const isSlotAvailable = isInFuture && !appointments.some(appointment => {
                 if (appointment.date !== dateStr) return false;
                 
                 const appointmentStart = parse(appointment.startTime, 'HH:mm', new Date());
@@ -224,6 +238,15 @@ export const getAvailableSlotsForNext7Days = async (brokerId: string): Promise<A
             currentSlotStart = currentSlotEnd;
           }
         }
+      } else {
+        // Ajouter un créneau "vide" pour ce jour pour qu'il apparaisse quand même dans l'affichage
+        availableSlots.push({
+          date: dateStr,
+          startTime: "",
+          endTime: "",
+          formattedDate: formattedDate,
+          isEmpty: true // Marquer comme jour sans créneau disponible
+        });
       }
     }
     

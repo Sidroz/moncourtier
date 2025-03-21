@@ -129,7 +129,7 @@ export default function AppointmentBooking() {
         date: selectedSlot.date,
         startTime: selectedSlot.startTime,
         endTime: selectedSlot.endTime,
-        status: 'pending',
+        status: 'confirmed',
         title: `RDV avec ${courtier.firstName} ${courtier.lastName}`,
         notes: ''
       });
