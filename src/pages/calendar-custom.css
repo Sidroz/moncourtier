@@ -1,0 +1,404 @@
+/* Personnalisation du calendrier */
+
+/* Style général des en-têtes */
+.rbc-header {
+  padding: 8px 2px;
+  text-align: center;
+  border-bottom: 1px solid #ddd;
+  font-weight: 500;
+  text-transform: capitalize;
+  white-space: pre-line;
+  line-height: 1.2;
+  height: auto;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Style pour le numéro du jour */
+.rbc-header span:first-child {
+  font-weight: bold;
+  font-size: 1.1rem;
+  display: block;
+}
+
+/* Style pour le nom du jour */
+.rbc-header span:last-child {
+  font-size: 0.9rem;
+  color: #555;
+  display: block;
+}
+
+/* Styles pour les heures - centrage horizontal */
+.rbc-time-content > .rbc-time-gutter {
+  padding: 0;
+  text-align: center;
+  font-weight: 500;
+  border-right: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.rbc-time-gutter .rbc-timeslot-group {
+  border-right: none;
+  width: 100%;
+  min-width: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rbc-time-gutter .rbc-label {
+  padding: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #444;
+  font-weight: 600;
+}
+
+/* Style des événements */
+.rbc-event {
+  background-color: #3174ad;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 2px 5px;
+  font-size: 0.85em;
+}
+
+/* Style pour le jour actuel - étendre jusqu'en haut */
+.rbc-today {
+  background-color: rgba(0, 120, 255, 0.05);
+}
+
+/* Cibler tous les éléments du jour courant pour assurer une coloration uniforme */
+.rbc-time-view .rbc-time-header .rbc-today,
+.rbc-time-view .rbc-day-bg.rbc-today,
+.rbc-time-view .rbc-today-bg,
+.rbc-time-header-content .rbc-header.rbc-today,
+.rbc-header-row .rbc-header.rbc-today,
+.rbc-row-bg .rbc-day-bg.rbc-today,
+.rbc-row-content .rbc-row .rbc-date-cell.rbc-now.rbc-today {
+  background-color: rgba(0, 120, 255, 0.05) !important;
+}
+
+/* Forcer la coloration du fond de la colonne entière */
+.rbc-time-column.rbc-today-bg:before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 120, 255, 0.05);
+  z-index: -1;
+}
+
+/* Supprimer les espaces vides sous les jours */
+.rbc-time-header.rbc-overflowing {
+  border-right: 0;
+}
+
+.rbc-time-view {
+  border: 1px solid #ddd;
+  box-sizing: border-box;
+}
+
+/* Supprimer la hauteur des cellules vides */
+.rbc-time-header-content {
+  border-left: none;
+}
+
+.rbc-allday-cell {
+  display: none;
+}
+
+.rbc-allday-events {
+  display: none;
+}
+
+.rbc-header + .rbc-header {
+  border-left: 1px solid #ddd;
+}
+
+/* Correction pour étendre la couleur du jour actuel sur toute la colonne */
+.rbc-time-view .rbc-day-slot.rbc-today {
+  background-color: rgba(0, 120, 255, 0.05) !important;
+}
+
+.rbc-time-header-cell.rbc-today {
+  background-color: rgba(0, 120, 255, 0.05) !important;
+}
+
+/* S'assurer que la couleur s'applique sur l'ensemble de la colonne */
+.rbc-day-slot.rbc-today .rbc-timeslot-group {
+  background-color: rgba(0, 120, 255, 0.05) !important;
+}
+
+.rbc-current-time-indicator {
+  z-index: 3;
+  height: 2px;
+  background-color: #3174ad;
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+
+/* Style des boutons */
+.rbc-btn-group {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.rbc-btn-group button {
+  background-color: white;
+  border: 1px solid #ccc;
+  color: #555;
+  padding: 6px 12px;
+  font-size: 0.9em;
+  transition: all 0.2s ease;
+}
+
+.rbc-btn-group button:hover {
+  background-color: #f8f8f8;
+}
+
+.rbc-btn-group button.rbc-active {
+  background-color: #244257;
+  color: white;
+  border-color: #244257;
+}
+
+/* Personnalisation spécifique pour les jours de la semaine */
+.rbc-header:nth-of-type(1)::after {
+  content: "Lun";
+  display: block;
+  font-size: 0.9rem;
+  color: #555;
+  margin-top: 3px;
+}
+
+.rbc-header:nth-of-type(2)::after {
+  content: "Mar";
+  display: block;
+  font-size: 0.9rem;
+  color: #555;
+  margin-top: 3px;
+}
+
+.rbc-header:nth-of-type(3)::after {
+  content: "Mer";
+  display: block;
+  font-size: 0.9rem;
+  color: #555;
+  margin-top: 3px;
+}
+
+.rbc-header:nth-of-type(4)::after {
+  content: "Jeu";
+  display: block;
+  font-size: 0.9rem;
+  color: #555;
+  margin-top: 3px;
+}
+
+.rbc-header:nth-of-type(5)::after {
+  content: "Ven";
+  display: block;
+  font-size: 0.9rem;
+  color: #555;
+  margin-top: 3px;
+}
+
+.rbc-header:nth-of-type(6)::after {
+  content: "Sam";
+  display: block;
+  font-size: 0.9rem;
+  color: #555;
+  margin-top: 3px;
+}
+
+.rbc-header:nth-of-type(7)::after {
+  content: "Dim";
+  display: block;
+  font-size: 0.9rem;
+  color: #555;
+  margin-top: 3px;
+}
+
+/* Assurer que la colonne entière du jour actuel est mise en évidence */
+.rbc-time-column.rbc-today-bg {
+  background-color: rgba(0, 120, 255, 0.05) !important;
+}
+
+/* Assurer la cohérence des couleurs pour tous les éléments du calendrier */
+.rbc-timeslot-group {
+  border-bottom: 1px solid #e5e5e5;
+}
+
+/* Améliorer le contraste entre les heures et les jours */
+.rbc-timeslot-group:nth-child(odd) {
+  background-color: rgba(245, 245, 245, 0.4);
+}
+
+.rbc-day-slot.rbc-today .rbc-timeslot-group:nth-child(odd) {
+  background-color: rgba(0, 120, 255, 0.07) !important;
+}
+
+.rbc-day-slot.rbc-today .rbc-timeslot-group:nth-child(even) {
+  background-color: rgba(0, 120, 255, 0.03) !important;
+}
+
+/* Suppression complète des cellules "all-day" et optimisation de l'espace */
+.rbc-time-view .rbc-time-header {
+  min-height: auto;
+  border-bottom: 1px solid #ddd;
+}
+
+.rbc-time-header .rbc-row {
+  min-height: auto;
+}
+
+.rbc-time-header-content .rbc-row-bg {
+  display: none;
+}
+
+.rbc-time-header-content .rbc-row-content {
+  margin-bottom: 0;
+  z-index: 4;
+  border-bottom: none;
+}
+
+/* Optimisation de la hauteur des en-têtes */
+.rbc-header {
+  min-height: 50px;
+  padding: 6px 2px;
+}
+
+/* Éliminer l'espace entre l'en-tête et le contenu des heures */
+.rbc-time-content {
+  border-top: none;
+}
+
+/* Style des en-têtes - garantir la coloration jusqu'au bord */
+.rbc-header {
+  min-height: 50px;
+  padding: 6px 2px;
+  border-bottom: none;
+}
+
+/* Assurer que la ligne de temps actuelle est bien visible */
+.rbc-current-time-indicator {
+  height: 2px;
+  background-color: #ff4444;
+  z-index: 10;
+}
+
+/* Améliorer les bordures entre colonnes */
+.rbc-day-slot {
+  border-left: none;
+}
+
+/* Ajustement des bordures pour éviter les espaces blancs */
+.rbc-time-content > * + * {
+  border-left: none;
+}
+
+/* Bordure unique pour séparer la colonne des heures */
+.rbc-time-content .rbc-time-gutter {
+  border-right: 1px solid #ddd;
+}
+
+.rbc-time-content .rbc-time-gutter .rbc-timeslot-group {
+  border-right: none;
+}
+
+.rbc-timeslot-group {
+  min-height: 40px;
+}
+
+/* Réglage précis pour la colonne des heures */
+.rbc-time-view .rbc-time-gutter {
+  background-color: #f8f8f8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rbc-time-view .rbc-time-header-gutter {
+  background-color: #f8f8f8;
+  border-right: 1px solid #ddd;
+  width: 79px !important;
+  min-width: 79px !important;
+  max-width: 79px !important;
+  box-sizing: border-box;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.rbc-time-gutter {
+  width: 79px !important;
+  min-width: 79px !important;
+  max-width: 79px !important;
+}
+
+/* Réglage du conteneur principal du calendrier */
+.rbc-time-view .rbc-time-content {
+  overflow-x: hidden;
+  border-top: 1px solid #ddd;
+  margin-top: -1px;
+  box-sizing: border-box;
+}
+
+/* Ajuster la bordure des colonnes de temps */
+.rbc-day-slot .rbc-time-slot {
+  border: none;
+}
+
+/* Style plus net pour les heures */
+.rbc-time-view .rbc-time-gutter .rbc-timeslot-group {
+  background-color: #f8f8f8;
+}
+
+/* Bordure spécifique pour le séparateur des heures */
+.rbc-time-content .rbc-time-gutter .rbc-timeslot-group {
+  border-right: 1px solid #ddd;
+}
+
+/* Styles spécifiques pour les éléments d'heure dans la colonne du temps */
+.rbc-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Correction pour le double centrage */
+.rbc-time-slot .rbc-label {
+  justify-content: center;
+  position: relative;
+  margin: 0 auto;
+  width: 100%;
+  text-align: center;
+}
+
+/* Amélioration de l'espacement vertical */
+.rbc-timeslot-group {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+/* S'assurer que les colonnes sont bien alignées */
+.rbc-time-content .rbc-day-slot {
+  box-sizing: border-box;
+} 

@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import { startOfDay, addDays, format, parse, isWithinInterval } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { createBrokerClientRelation, updateRelationForAppointment } from './brokerClientRelationService';
 
 // Types
 export interface TimeSlot {
@@ -110,6 +111,7 @@ export const getBrokerAppointments = async (
 // Fonction pour créer un nouveau rendez-vous
 export const createAppointment = async (appointment: Omit<Appointment, 'id' | 'createdAt'>): Promise<string | null> => {
   try {
+    // Créer le rendez-vous
     const appointmentsRef = collection(db, 'appointments');
     const newAppointment = {
       ...appointment,
@@ -117,6 +119,23 @@ export const createAppointment = async (appointment: Omit<Appointment, 'id' | 'c
     };
     
     const docRef = await addDoc(appointmentsRef, newAppointment);
+
+    // Récupérer les informations du courtier
+    const brokerDoc = await getDoc(doc(db, 'courtiers', appointment.brokerId));
+    const brokerData = brokerDoc.data();
+    const brokerName = brokerData ? `${brokerData.firstName} ${brokerData.lastName}` : 'Courtier';
+
+    // Créer ou mettre à jour la relation courtier-client
+    await createBrokerClientRelation(
+      appointment.brokerId,
+      appointment.clientId,
+      appointment.clientName,
+      brokerName,
+      Timestamp.fromDate(parse(appointment.date, 'yyyy-MM-dd', new Date())),
+      appointment.clientEmail,
+      appointment.clientPhone
+    );
+    
     return docRef.id;
   } catch (error) {
     console.error('Erreur lors de la création du rendez-vous:', error);
