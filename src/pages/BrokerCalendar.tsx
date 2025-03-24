@@ -8,7 +8,7 @@ import { auth, db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { Link, useNavigate } from 'react-router-dom';
-import { Calendar, Clock, FileText, Settings, LogOut, Users, BarChart as ChartBar, X, Phone, Mail, AlertCircle, CheckCircle, Clock as ClockIcon } from 'lucide-react';
+import { Calendar, Clock, FileText, Settings, LogOut, Users, BarChart as ChartBar, X, Phone, Mail, AlertCircle, CheckCircle, Clock as ClockIcon, User } from 'lucide-react';
 import { getBrokerAppointments } from '../services/appointmentService';
 import './calendar-custom.css';
 
@@ -206,8 +206,8 @@ export default function BrokerCalendar() {
 
       <div className="w-full pt-16 flex">
         {/* Sidebar */}
-        <div className="w-24 fixed left-0 top-1/2 transform -translate-y-1/2 h-[500px] py-6 ml-[20px] bg-[#244257] rounded-3xl flex flex-col items-center justify-center shadow-lg">
-          <div className="flex flex-col items-center space-y-8">
+        <div className="w-24 fixed left-0 top-1/2 transform -translate-y-1/2 h-[600px] py-6 ml-[20px] bg-[#244257] rounded-3xl flex flex-col items-center justify-center shadow-lg">
+          <div className="flex flex-col items-center space-y-6">
             <Link to="/courtier/calendrier" className="flex flex-col items-center text-white group transition-all duration-300 relative">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <Calendar className="h-6 w-6 group-hover:scale-110 transition-transform" />
@@ -237,6 +237,11 @@ export default function BrokerCalendar() {
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <Settings className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Paramètres</span>
+            </Link>
+            <Link to="/courtier/profil" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+              <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
+              <User className="h-6 w-6 group-hover:scale-110 transition-transform" />
+              <span className="text-xs mt-2 font-medium">Profil</span>
             </Link>
           </div>
         </div>

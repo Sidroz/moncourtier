@@ -11,7 +11,9 @@ import {
   startAfter,
   Timestamp,
   DocumentData,
-  QueryDocumentSnapshot
+  QueryDocumentSnapshot,
+  addDoc,
+  updateDoc
 } from 'firebase/firestore';
 
 // Types
@@ -28,6 +30,8 @@ export interface Client {
   lastAppointmentDate?: Timestamp;
   notes?: string;
   createdAt: Timestamp;
+  brokerId?: string;
+  type?: string;
 }
 
 // Fonction pour obtenir les clients d'un courtier
@@ -128,5 +132,37 @@ export const getClientById = async (clientId: string): Promise<Client | null> =>
   } catch (error) {
     console.error('Erreur lors de la récupération du client:', error);
     return null;
+  }
+};
+
+// Fonction pour créer un nouveau client
+export const addClient = async (clientData: Omit<Client, 'id' | 'createdAt' | 'appointmentCount'>): Promise<string> => {
+  try {
+    const usersRef = collection(db, 'users');
+    
+    const newClient = {
+      ...clientData,
+      type: 'client',
+      appointmentCount: 0,
+      createdAt: Timestamp.now()
+    };
+    
+    const docRef = await addDoc(usersRef, newClient);
+    return docRef.id;
+  } catch (error) {
+    console.error('Erreur lors de la création du client:', error);
+    throw error;
+  }
+};
+
+// Fonction pour mettre à jour un client existant
+export const updateClient = async (clientId: string, clientData: Partial<Client>): Promise<boolean> => {
+  try {
+    const clientRef = doc(db, 'users', clientId);
+    await updateDoc(clientRef, clientData);
+    return true;
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour du client:', error);
+    return false;
   }
 }; 

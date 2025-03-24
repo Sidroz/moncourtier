@@ -142,11 +142,19 @@ export default function ClientDashboard() {
           }
           
           // Trier les rendez-vous par date (du plus proche au plus éloigné)
-          const sortedAppointments = appointmentsData.sort((a, b) => {
-            const dateA = new Date(`${a.date}T${a.startTime}`);
-            const dateB = new Date(`${b.date}T${b.startTime}`);
-            return dateA.getTime() - dateB.getTime();
-          });
+          const sortedAppointments = appointmentsData
+            // Filtre pour ne garder que les rendez-vous à venir
+            .filter(a => {
+              const appointmentDate = new Date(`${a.date}T${a.startTime}`);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0); // Mettre à minuit pour comparer seulement les dates
+              return appointmentDate >= today;
+            })
+            .sort((a, b) => {
+              const dateA = new Date(`${a.date}T${a.startTime}`);
+              const dateB = new Date(`${b.date}T${b.startTime}`);
+              return dateA.getTime() - dateB.getTime();
+            });
           
           console.log("Rendez-vous triés et prêts à être affichés:", sortedAppointments);
           setAppointments(sortedAppointments);
@@ -211,18 +219,25 @@ export default function ClientDashboard() {
                 Accueil
               </Link>
               <Link 
-                to="/client/appointments" 
+                to="/client/rendezvous" 
                 className={`px-4 py-2 rounded-lg hover:bg-blue-800 ${
-                  location.pathname === '/client/appointments' 
+                  location.pathname === '/client/rendezvous' 
                     ? 'bg-white text-[#244257]' 
                     : 'bg-[#244257] text-white hover:bg-blue-800'
                 }`}
               >
                 Rendez-vous
               </Link>
-              <button className="px-4 py-2 bg-[#244257] text-white rounded-lg hover:bg-blue-800">
+              <Link 
+                to="/client/vos-courtiers" 
+                className={`px-4 py-2 rounded-lg hover:bg-blue-800 ${
+                  location.pathname === '/client/vos-courtiers' 
+                    ? 'bg-white text-[#244257]' 
+                    : 'bg-[#244257] text-white hover:bg-blue-800'
+                }`}
+              >
                 Vos Courtiers
-              </button>
+              </Link>
               <Link 
                 to="/client/settings" 
                 className={`px-4 py-2 rounded-lg hover:bg-blue-800 ${
@@ -277,12 +292,12 @@ export default function ClientDashboard() {
             </div>
             {appointments.length === 0 ? (
               <p className="text-gray-600 text-center mb-10">
-                Vous n'avez pas de rendez-vous à venir. 
-                <br /><span className="text-xs mt-2 block">Vérifiez la console pour le débogage.</span>
+                Vous n'avez pas de rendez-vous à venir.
+                <br /><span className="text-xs mt-2 block">Consultez la section rendez-vous pour voir l'historique.</span>
               </p>
             ) : (
               <ul className="space-y-4">
-                {appointments.map(appointment => (
+                {appointments.slice(0, 3).map(appointment => (
                   <li key={appointment.id} className="flex items-center space-x-4">
                     <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                       {appointment.brokerPhotoURL ? (

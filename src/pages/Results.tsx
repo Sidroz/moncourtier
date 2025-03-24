@@ -363,9 +363,12 @@ export default function Results() {
                         )}
                         <div className="mt-4">
                           <div className="flex space-x-2">
-                            <button className="px-4 py-1.5 bg-[#3892d2] text-white rounded-full text-sm font-medium hover:bg-blue-400 w-full">
+                            <Link
+                              to={`/broker-profil/${courtier.id}`}
+                              className="px-4 py-1.5 bg-[#3892d2] text-white rounded-full text-sm font-medium hover:bg-blue-400 w-full text-center"
+                            >
                               Voir le profil
-                            </button>
+                            </Link>
                           </div>
                           <div className="mt-2">
                             <Link 

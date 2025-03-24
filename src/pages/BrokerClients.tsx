@@ -2,10 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import { Calendar, Clock, FileText, Settings, LogOut, Users, BarChart as ChartBar, Search, Plus, Phone, Mail, MapPin, X, Edit, Trash2, Info, ChevronRight, ChevronLeft, ChevronDown } from 'lucide-react';
+import { Calendar, Clock, FileText, Settings, LogOut, Users, BarChart as ChartBar, Search, Plus, Phone, Mail, MapPin, X, Edit, Trash2, Info, ChevronRight, ChevronLeft, ChevronDown, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getBrokerRelations, BrokerClientRelation, deactivateRelation } from '../services/brokerClientRelationService';
 import { DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
+import AddClientModal from '../components/AddClientModal';
+import EditClientModal from '../components/EditClientModal';
 
 export default function BrokerClients() {
   const [user, loading, error] = useAuthState(auth);
@@ -19,6 +21,10 @@ export default function BrokerClients() {
   const [hasMore, setHasMore] = useState(true);
   const [selectedRelation, setSelectedRelation] = useState<BrokerClientRelation | null>(null);
   const [showRelationDetails, setShowRelationDetails] = useState(false);
+  const [showAddClientModal, setShowAddClientModal] = useState(false);
+  const [showEditClientModal, setShowEditClientModal] = useState(false);
+  const [editingRelation, setEditingRelation] = useState<BrokerClientRelation | null>(null);
+  const [brokerName, setBrokerName] = useState('');
   const relationsPerPage = 10;
   const clientListRef = useRef<HTMLDivElement>(null);
 
@@ -30,6 +36,7 @@ export default function BrokerClients() {
           const userDoc = await getDoc(userDocRef);
           if (userDoc.exists() && userDoc.data().type === 'courtier') {
             setIsAuthorized(true);
+            setBrokerName(userDoc.data().displayName || '');
             loadRelations();
           }
         } catch (err) {
@@ -124,6 +131,12 @@ export default function BrokerClients() {
     }
   };
 
+  const handleEditRelation = (relation: BrokerClientRelation, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingRelation(relation);
+    setShowEditClientModal(true);
+  };
+
   if (loading || !authChecked) {
     return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
   }
@@ -174,8 +187,8 @@ export default function BrokerClients() {
 
       <div className="w-full pt-20 flex">
         {/* Sidebar */}
-        <div className="w-24 fixed left-0 top-1/2 transform -translate-y-1/2 h-[500px] py-6 ml-[20px] bg-[#244257] rounded-3xl flex flex-col items-center justify-center shadow-lg">
-          <div className="flex flex-col items-center space-y-8">
+        <div className="w-24 fixed left-0 top-1/2 transform -translate-y-1/2 h-[600px] py-6 ml-[20px] bg-[#244257] rounded-3xl flex flex-col items-center justify-center shadow-lg">
+          <div className="flex flex-col items-center space-y-6">
             <Link to="/courtier/calendrier" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <Calendar className="h-6 w-6 group-hover:scale-110 transition-transform" />
@@ -206,6 +219,11 @@ export default function BrokerClients() {
               <Settings className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Paramètres</span>
             </Link>
+            <Link to="/courtier/profil" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+              <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
+              <User className="h-6 w-6 group-hover:scale-110 transition-transform" />
+              <span className="text-xs mt-2 font-medium">Profil</span>
+            </Link>
           </div>
         </div>
 
@@ -217,7 +235,10 @@ export default function BrokerClients() {
                 <h1 className="text-3xl font-bold text-gray-800 mb-2">Annuaire des clients</h1>
                 <p className="text-gray-500">Gérez et suivez vos clients en un coup d'œil</p>
               </div>
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl flex items-center space-x-2 transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg">
+              <button 
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl flex items-center space-x-2 transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg"
+                onClick={() => setShowAddClientModal(true)}
+              >
                 <Plus className="h-5 w-5" />
                 <span className="font-medium">Ajouter un client</span>
               </button>
@@ -312,10 +333,7 @@ export default function BrokerClients() {
                       <div className="col-span-1 flex items-center justify-end space-x-2">
                         <button 
                           className="p-2 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50 transition-all duration-200"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            // Action d'édition
-                          }}
+                          onClick={(e) => handleEditRelation(relation, e)}
                         >
                           <Edit className="h-4 w-4" />
                         </button>
@@ -434,6 +452,31 @@ export default function BrokerClients() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Add Client Modal */}
+      <AddClientModal 
+        isOpen={showAddClientModal} 
+        onClose={() => setShowAddClientModal(false)} 
+        brokerId={user?.uid || ''} 
+        brokerName={brokerName}
+        onSuccess={loadRelations}
+      />
+
+      {/* Edit Client Modal */}
+      {editingRelation && (
+        <EditClientModal 
+          isOpen={showEditClientModal} 
+          onClose={() => {
+            setShowEditClientModal(false);
+            setEditingRelation(null);
+          }} 
+          brokerId={user?.uid || ''} 
+          brokerName={brokerName}
+          clientId={editingRelation.clientId}
+          relationId={editingRelation.id}
+          onSuccess={loadRelations}
+        />
       )}
     </div>
   );

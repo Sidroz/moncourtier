@@ -45,7 +45,8 @@ export const createBrokerClientRelation = async (
   appointmentDate: Timestamp,
   clientEmail?: string,
   clientPhone?: string,
-  clientAddress?: string
+  clientAddress?: string,
+  notes?: string
 ): Promise<string> => {
   try {
     const relationsRef = collection(db, 'broker_client_relations');
@@ -75,6 +76,7 @@ export const createBrokerClientRelation = async (
       if (clientEmail) updateData.email = clientEmail;
       if (clientPhone) updateData.phone = clientPhone;
       if (clientAddress) updateData.address = clientAddress;
+      if (notes) updateData.notes = notes;
 
       await updateDoc(doc(db, 'broker_client_relations', relationDoc.id), updateData);
       
@@ -100,6 +102,7 @@ export const createBrokerClientRelation = async (
     if (clientEmail) newRelation.email = clientEmail;
     if (clientPhone) newRelation.phone = clientPhone;
     if (clientAddress) newRelation.address = clientAddress;
+    if (notes) newRelation.notes = notes;
     
     const docRef = await addDoc(relationsRef, newRelation);
     return docRef.id;
