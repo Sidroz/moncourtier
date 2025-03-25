@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { getAuth, updatePassword, deleteUser, EmailAuthProvider, reauthenticateWithCredential, signOut } from 'firebase/auth';
 import { doc, deleteDoc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { toast } from 'react-hot-toast';
-import { Calendar, LogOut, User, HelpCircle, Shield, ArrowRight, Trash2 } from 'lucide-react';
+import { Calendar, LogOut, User, HelpCircle, Shield, ArrowRight, Trash2, Bell, Menu, ChevronDown } from 'lucide-react';
 
 interface UserProfile {
   firstName: string;
@@ -14,6 +14,7 @@ interface UserProfile {
 
 export default function ClientSecurity() {
   const navigate = useNavigate();
+  const location = useLocation();
   const auth = getAuth();
   const [saving, setSaving] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -114,53 +115,117 @@ export default function ClientSecurity() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-[#244257] text-white">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Calendar className="h-8 w-8" />
-            <span className="text-2xl font-bold">MonCourtier</span>
-          </div>
-          <div className="flex items-center space-x-4">
-            <nav className="flex space-x-4">
-              <Link to="/" className="px-4 py-2 bg-[#244257] text-white rounded-lg hover:bg-blue-800">
-                Accueil
-              </Link>
-              <button className="px-4 py-2 bg-[#244257] text-white rounded-lg hover:bg-blue-800">
-                Rendez-vous
-              </button>
-              <button className="px-4 py-2 bg-[#244257] text-white rounded-lg hover:bg-blue-800">
-                Vos Courtiers
-              </button>
-              <Link to="/client/settings" className="px-4 py-2 bg-white text-[#244257] rounded-lg hover:bg-gray-100">
-                Profil
-              </Link>
-            </nav>
-            <button className="flex items-center space-x-2 px-4 py-2 bg-[#244257] text-white rounded-lg hover:bg-blue-800">
-              <HelpCircle className="h-5 w-5" />
-              <span>Centre d'aide</span>
-            </button>
-            <div className="flex items-center space-x-2">
-              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                {profile.photoURL ? (
-                  <img 
-                    src={profile.photoURL} 
-                    alt="Photo de profil"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <User className="h-6 w-6 text-gray-500" />
-                )}
+      <header className="bg-gradient-to-r from-[#1a3548] to-[#244257] text-white shadow-md border-b border-[#1a3548]/10">
+        <div className="max-w-7xl mx-auto px-6 py-3">
+          {/* Logo et navigation principale */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center space-x-2 py-2">
+                <div className="bg-white/10 p-1.5 rounded-lg">
+                  <Calendar className="h-6 w-6 text-blue-100" />
+                </div>
+                <Link to="/" className="text-2xl font-bold hover:text-blue-100 transition-colors">
+                  MonCourtier
+                </Link>
               </div>
-              <div className="flex flex-col">
-                <span className="text-sm">{profile.firstName} {profile.lastName}</span>
-                <button 
-                  onClick={handleSignOut}
-                  className="text-sm text-gray-300 hover:text-white text-left flex items-center"
+              
+              <nav className="hidden md:flex items-center ml-10 space-x-1">
+                <Link 
+                  to="/client" 
+                  className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
+                    location.pathname === '/client' 
+                      ? 'bg-white/10 text-white' 
+                      : 'text-gray-100 hover:bg-white/5'
+                  }`}
                 >
-                  <LogOut className="h-3 w-3 mr-1" />
-                  Se déconnecter
+                  Accueil
+                </Link>
+                <Link 
+                  to="/client/rendezvous" 
+                  className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
+                    location.pathname === '/client/rendezvous' 
+                      ? 'bg-white/10 text-white' 
+                      : 'text-gray-100 hover:bg-white/5'
+                  }`}
+                >
+                  Rendez-vous
+                </Link>
+                <Link 
+                  to="/client/vos-courtiers" 
+                  className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
+                    location.pathname === '/client/vos-courtiers' 
+                      ? 'bg-white/10 text-white' 
+                      : 'text-gray-100 hover:bg-white/5'
+                  }`}
+                >
+                  Vos Courtiers
+                </Link>
+                <Link 
+                  to="/client/settings" 
+                  className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
+                    location.pathname.includes('/client/settings') || location.pathname.includes('/client/security')
+                      ? 'bg-white/10 text-white' 
+                      : 'text-gray-100 hover:bg-white/5'
+                  }`}
+                >
+                  Profil
+                </Link>
+              </nav>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              {/* Icônes d'action */}
+              <button className="relative p-2 rounded-full hover:bg-white/10 transition-colors">
+                <Bell className="h-5 w-5 text-gray-100" />
+                <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
+              </button>
+              
+              <button className="hidden md:flex items-center space-x-2 px-3 py-1.5 bg-white/10 text-white rounded-lg border border-white/5 hover:bg-white/15 transition-colors text-sm">
+                <HelpCircle className="h-4 w-4" />
+                <span>Centre d'aide</span>
+              </button>
+              
+              {/* Menu utilisateur */}
+              <div className="relative group">
+                <button className="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-white/10 transition-colors">
+                  <div className="w-8 h-8 rounded-full bg-blue-800/30 ring-2 ring-white/20 flex items-center justify-center overflow-hidden">
+                    {profile.photoURL ? (
+                      <img 
+                        src={profile.photoURL} 
+                        alt="Photo de profil"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="h-5 w-5 text-blue-100" />
+                    )}
+                  </div>
+                  <span className="hidden md:block text-sm font-medium">{profile.firstName} {profile.lastName}</span>
+                  <ChevronDown className="h-4 w-4 text-gray-300 hidden md:block" />
                 </button>
+                
+                {/* Menu déroulant */}
+                <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50 transform origin-top-right">
+                  <div className="py-2 px-3 border-b border-gray-100">
+                    <p className="text-sm font-medium text-gray-900">{profile.firstName} {profile.lastName}</p>
+                    <p className="text-xs text-gray-500">{auth.currentUser?.email}</p>
+                  </div>
+                  <div className="py-1">
+                    <Link to="/client/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Paramètres</Link>
+                    <button 
+                      onClick={handleSignOut}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center"
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Se déconnecter
+                    </button>
+                  </div>
+                </div>
               </div>
+              
+              {/* Menu mobile */}
+              <button className="md:hidden p-2 rounded-lg hover:bg-white/10">
+                <Menu className="h-6 w-6 text-white" />
+              </button>
             </div>
           </div>
         </div>

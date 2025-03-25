@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import { Calendar, Clock, FileText, Settings, LogOut, Users, BarChart as ChartBar, Search, Plus, Phone, Mail, MapPin, X, Edit, Trash2, Info, ChevronRight, ChevronLeft, ChevronDown, User } from 'lucide-react';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { Calendar, Clock, FileText, Settings, LogOut, Users, BarChart as ChartBar, Search, Plus, Phone, Mail, MapPin, X, Edit, Trash2, Info, ChevronRight, ChevronLeft, ChevronDown, User, Shield, Building } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getBrokerRelations, BrokerClientRelation, deactivateRelation } from '../services/brokerClientRelationService';
 import { DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
 import AddClientModal from '../components/AddClientModal';
 import EditClientModal from '../components/EditClientModal';
+import { getClientById } from '../services/clientService';
 
 export default function BrokerClients() {
   const [user, loading, error] = useAuthState(auth);
@@ -27,6 +28,8 @@ export default function BrokerClients() {
   const [brokerName, setBrokerName] = useState('');
   const relationsPerPage = 10;
   const clientListRef = useRef<HTMLDivElement>(null);
+  const [clientsWithAccount, setClientsWithAccount] = useState<Set<string>>(new Set());
+  const [hasCabinet, setHasCabinet] = useState(false);
 
   useEffect(() => {
     if (!loading && user) {
@@ -37,6 +40,7 @@ export default function BrokerClients() {
           if (userDoc.exists() && userDoc.data().type === 'courtier') {
             setIsAuthorized(true);
             setBrokerName(userDoc.data().displayName || '');
+            setHasCabinet(!!userDoc.data().cabinetId);
             loadRelations();
           }
         } catch (err) {
@@ -59,6 +63,33 @@ export default function BrokerClients() {
       setFilteredRelations(result.relations);
       setLastVisible(result.lastVisible);
       setHasMore(result.relations.length === relationsPerPage);
+      
+      // Récupérer tous les emails des clients avec comptes utilisateurs actifs
+      const usersRef = collection(db, 'users');
+      const clientsQuery = query(
+        usersRef,
+        where('type', '==', 'client')
+      );
+      const clientsSnapshot = await getDocs(clientsQuery);
+      
+      // Créer un ensemble d'emails de clients avec compte
+      const clientEmails = new Set<string>();
+      clientsSnapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.email) {
+          clientEmails.add(data.email.toLowerCase());
+        }
+      });
+      
+      // Vérifier pour chaque relation si l'email du client est dans l'ensemble
+      const clientAccountSet = new Set<string>();
+      result.relations.forEach(relation => {
+        if (relation.email && clientEmails.has(relation.email.toLowerCase())) {
+          clientAccountSet.add(relation.clientId);
+        }
+      });
+      
+      setClientsWithAccount(clientAccountSet);
     } catch (err) {
       console.error('Erreur lors du chargement des relations:', err);
     } finally {
@@ -187,39 +218,41 @@ export default function BrokerClients() {
 
       <div className="w-full pt-20 flex">
         {/* Sidebar */}
-        <div className="w-24 fixed left-0 top-1/2 transform -translate-y-1/2 h-[600px] py-6 ml-[20px] bg-[#244257] rounded-3xl flex flex-col items-center justify-center shadow-lg">
-          <div className="flex flex-col items-center space-y-6">
-            <Link to="/courtier/calendrier" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+        <div className="w-24 fixed left-0 top-1/2 transform -translate-y-1/2 h-[600px] py-6 ml-[20px] bg-[#244257]/90 backdrop-blur-md rounded-3xl flex flex-col items-center justify-center shadow-xl transition-all duration-300 hover:shadow-2xl animate-fadeIn">
+          <div className="flex flex-col items-center space-y-6 animate-slideIn">
+            <Link to="/courtier/calendrier" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <Calendar className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Agenda</span>
             </Link>
-            <Link to="/courtier/clients" className="flex flex-col items-center text-white group transition-all duration-300 relative">
+            <Link to="/courtier/clients" className="flex flex-col items-center text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-100 transition-opacity -z-10"></div>
               <Users className="h-6 w-6 scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Clients</span>
             </Link>
-            <Link to="/courtier/disponibilites" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+            <Link to="/courtier/disponibilites" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <Clock className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Disponibilités</span>
             </Link>
-            <Link to="/courtier/documents" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
-              <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
-              <FileText className="h-6 w-6 group-hover:scale-110 transition-transform" />
-              <span className="text-xs mt-2 font-medium">Documents</span>
-            </Link>
-            <Link to="/courtier/stats" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+            {hasCabinet && (
+              <Link to="/courtier/cabinet" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
+                <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
+                <Building className="h-6 w-6 group-hover:scale-110 transition-transform" />
+                <span className="text-xs mt-2 font-medium">Cabinet</span>
+              </Link>
+            )}
+            <Link to="/courtier/stats" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <ChartBar className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Statistiques</span>
             </Link>
-            <Link to="/courtier/settings" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+            <Link to="/courtier/settings" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <Settings className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Paramètres</span>
             </Link>
-            <Link to="/courtier/profil" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+            <Link to="/courtier/profil" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <User className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Profil</span>
@@ -297,12 +330,22 @@ export default function BrokerClients() {
                       onClick={() => handleRelationClick(relation)}
                     >
                       <div className="col-span-4 flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-blue-600 font-medium">
-                          {relation.clientName?.[0]}
+                        <div className="relative">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-blue-600 font-medium">
+                            {relation.clientName?.[0]}
+                          </div>
+                          {clientsWithAccount.has(relation.clientId) && (
+                            <div className="absolute -top-1 -right-1 bg-blue-500 text-white rounded-full p-0.5" title="Ce client a un compte utilisateur">
+                              <Shield className="h-3 w-3" />
+                            </div>
+                          )}
                         </div>
                         <div>
-                          <div className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
+                          <div className="flex items-center font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
                             {relation.clientName}
+                            {clientsWithAccount.has(relation.clientId) && (
+                              <span className="ml-2 text-xs px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-full">Compte</span>
+                            )}
                           </div>
                           <div className="text-sm text-gray-500">{relation.notes || 'Aucune note'}</div>
                         </div>

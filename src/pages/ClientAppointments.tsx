@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Calendar, Clock, User, LogOut, HelpCircle, MapPin, Check, X, AlertCircle, ChevronRight, Plus } from 'lucide-react';
+import { Calendar, Clock, User, LogOut, HelpCircle, MapPin, Check, X, AlertCircle, ChevronRight, Plus, Phone, Bell, Menu, ChevronDown } from 'lucide-react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../firebase';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, Timestamp } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 
 interface Courtier {
@@ -44,6 +44,8 @@ export default function ClientAppointments() {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
   const [authChecked, setAuthChecked] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancellationMessage, setCancellationMessage] = useState<{type: 'success' | 'error', message: string} | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -118,7 +120,6 @@ export default function ClientAppointments() {
           
           // Séparer les rendez-vous passés et à venir
           const today = new Date();
-          today.setHours(0, 0, 0, 0);
           
           const upcoming = appointmentsData
             .filter(appointment => {
@@ -177,6 +178,89 @@ export default function ClientAppointments() {
     return date.toLocaleDateString('fr-FR', options);
   };
 
+  // Fonction pour vérifier si un rendez-vous est annulable (plus de 2 heures avant)
+  const isAppointmentCancellable = (appointment: Appointment): boolean => {
+    const appointmentTime = new Date(`${appointment.date}T${appointment.startTime}`);
+    const now = new Date();
+    
+    // Calculer la différence en millisecondes
+    const timeDifference = appointmentTime.getTime() - now.getTime();
+    
+    // Convertir en heures (1000 ms * 60 s * 60 min = 3600000 ms par heure)
+    const hoursDifference = timeDifference / 3600000;
+    
+    // Vérifier si le rendez-vous est à plus de 2 heures et n'est pas déjà annulé
+    return hoursDifference > 2 && appointment.status !== 'cancelled';
+  };
+
+  // Fonction pour annuler un rendez-vous
+  const cancelAppointment = async (appointmentId: string) => {
+    if (!user) return;
+    
+    try {
+      setIsCancelling(true);
+      
+      // Référence au document du rendez-vous
+      const appointmentRef = doc(db, 'appointments', appointmentId);
+      
+      // Mettre à jour le statut du rendez-vous
+      await updateDoc(appointmentRef, {
+        status: 'cancelled',
+        cancelledAt: Timestamp.now(),
+        cancelledBy: user.uid
+      });
+      
+      // Mettre à jour l'état local
+      setAppointments(prevAppointments => 
+        prevAppointments.map(appt => 
+          appt.id === appointmentId 
+            ? { ...appt, status: 'cancelled' } 
+            : appt
+        )
+      );
+      
+      setUpcomingAppointments(prevAppointments => 
+        prevAppointments.map(appt => 
+          appt.id === appointmentId 
+            ? { ...appt, status: 'cancelled' } 
+            : appt
+        )
+      );
+      
+      // Mettre à jour le rendez-vous sélectionné si c'est celui qui est annulé
+      if (selectedAppointment && selectedAppointment.id === appointmentId) {
+        setSelectedAppointment({
+          ...selectedAppointment,
+          status: 'cancelled'
+        });
+      }
+      
+      setCancellationMessage({
+        type: 'success',
+        message: 'Votre rendez-vous a été annulé avec succès.'
+      });
+      
+      // Fermer le message après 3 secondes
+      setTimeout(() => {
+        setCancellationMessage(null);
+      }, 3000);
+      
+    } catch (error) {
+      console.error('Erreur lors de l\'annulation du rendez-vous:', error);
+      setCancellationMessage({
+        type: 'error',
+        message: 'Une erreur est survenue lors de l\'annulation du rendez-vous.'
+      });
+      
+      // Fermer le message après 3 secondes
+      setTimeout(() => {
+        setCancellationMessage(null);
+      }, 3000);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
   }
@@ -192,81 +276,117 @@ export default function ClientAppointments() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-[#244257] text-white">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Calendar className="h-8 w-8" />
-            <Link to="/" className="text-2xl font-bold hover:text-gray-200 transition-colors">MonCourtier</Link>
-          </div>
-          <div className="flex items-center space-x-4">
-            <nav className="flex space-x-4">
-              <Link 
-                to="/client" 
-                className={`px-4 py-2 rounded-lg hover:bg-blue-800 ${
-                  location.pathname === '/client' 
-                    ? 'bg-white text-[#244257]' 
-                    : 'bg-[#244257] text-white hover:bg-blue-800'
-                }`}
-              >
-                Accueil
-              </Link>
-              <Link 
-                to="/client/appointments" 
-                className={`px-4 py-2 rounded-lg hover:bg-gray-100 ${
-                  location.pathname === '/client/appointments' 
-                    ? 'bg-white text-[#244257]' 
-                    : 'bg-[#244257] text-white hover:bg-blue-800'
-                }`}
-              >
-                Rendez-vous
-              </Link>
-              <Link 
-                to="/client/brokers" 
-                className={`px-4 py-2 rounded-lg hover:bg-blue-800 ${
-                  location.pathname === '/client/brokers' 
-                    ? 'bg-white text-[#244257]' 
-                    : 'bg-[#244257] text-white hover:bg-blue-800'
-                }`}
-              >
-                Vos Courtiers
-              </Link>
-              <Link 
-                to="/client/settings" 
-                className={`px-4 py-2 rounded-lg hover:bg-blue-800 ${
-                  location.pathname.includes('/client/settings') || location.pathname.includes('/client/security')
-                    ? 'bg-white text-[#244257]' 
-                    : 'bg-[#244257] text-white hover:bg-blue-800'
-                }`}
-              >
-                Profil
-              </Link>
-            </nav>
-            <button className="flex items-center space-x-2 px-4 py-2 bg-[#244257] text-white rounded-lg hover:bg-blue-800">
-              <HelpCircle className="h-5 w-5" />
-              <span>Centre d'aide</span>
-            </button>
-            <div className="flex items-center space-x-2">
-              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                {userData?.photoURL ? (
-                  <img 
-                    src={userData.photoURL} 
-                    alt="Photo de profil"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <User className="h-6 w-6 text-gray-500" />
-                )}
+      <header className="bg-gradient-to-r from-[#1a3548] to-[#244257] text-white shadow-md border-b border-[#1a3548]/10">
+        <div className="max-w-7xl mx-auto px-6 py-3">
+          {/* Logo et navigation principale */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center space-x-2 py-2">
+                <div className="bg-white/10 p-1.5 rounded-lg">
+                  <Calendar className="h-6 w-6 text-blue-100" />
+                </div>
+                <Link to="/" className="text-2xl font-bold hover:text-blue-100 transition-colors">
+                  MonCourtier
+                </Link>
               </div>
-              <div className="flex flex-col">
-                <span className="text-sm">{userData ? `${userData.firstName} ${userData.lastName}` : user.email || 'Utilisateur'}</span>
-                <button 
-                  onClick={handleLogout}
-                  className="text-sm text-gray-300 hover:text-white text-left flex items-center"
+              
+              <nav className="hidden md:flex items-center ml-10 space-x-1">
+                <Link 
+                  to="/client" 
+                  className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
+                    location.pathname === '/client' 
+                      ? 'bg-white/10 text-white' 
+                      : 'text-gray-100 hover:bg-white/5'
+                  }`}
                 >
-                  <LogOut className="h-3 w-3 mr-1" />
-                  Se déconnecter
+                  Accueil
+                </Link>
+                <Link 
+                  to="/client/rendezvous" 
+                  className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
+                    location.pathname === '/client/rendezvous' 
+                      ? 'bg-white/10 text-white' 
+                      : 'text-gray-100 hover:bg-white/5'
+                  }`}
+                >
+                  Rendez-vous
+                </Link>
+                <Link 
+                  to="/client/vos-courtiers" 
+                  className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
+                    location.pathname === '/client/vos-courtiers' 
+                      ? 'bg-white/10 text-white' 
+                      : 'text-gray-100 hover:bg-white/5'
+                  }`}
+                >
+                  Vos Courtiers
+                </Link>
+                <Link 
+                  to="/client/settings" 
+                  className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
+                    location.pathname.includes('/client/settings') || location.pathname.includes('/client/security')
+                      ? 'bg-white/10 text-white' 
+                      : 'text-gray-100 hover:bg-white/5'
+                  }`}
+                >
+                  Profil
+                </Link>
+              </nav>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              {/* Icônes d'action */}
+              <button className="relative p-2 rounded-full hover:bg-white/10 transition-colors">
+                <Bell className="h-5 w-5 text-gray-100" />
+                <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
+              </button>
+              
+              <button className="hidden md:flex items-center space-x-2 px-3 py-1.5 bg-white/10 text-white rounded-lg border border-white/5 hover:bg-white/15 transition-colors text-sm">
+                <HelpCircle className="h-4 w-4" />
+                <span>Centre d'aide</span>
+              </button>
+              
+              {/* Menu utilisateur */}
+              <div className="relative group">
+                <button className="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-white/10 transition-colors">
+                  <div className="w-8 h-8 rounded-full bg-blue-800/30 ring-2 ring-white/20 flex items-center justify-center overflow-hidden">
+                    {userData?.photoURL ? (
+                      <img 
+                        src={userData.photoURL} 
+                        alt="Photo de profil"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="h-5 w-5 text-blue-100" />
+                    )}
+                  </div>
+                  <span className="hidden md:block text-sm font-medium">{userData ? `${userData.firstName} ${userData.lastName}` : user.email || 'Utilisateur'}</span>
+                  <ChevronDown className="h-4 w-4 text-gray-300 hidden md:block" />
                 </button>
+                
+                {/* Menu déroulant */}
+                <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50 transform origin-top-right">
+                  <div className="py-2 px-3 border-b border-gray-100">
+                    <p className="text-sm font-medium text-gray-900">{userData ? `${userData.firstName} ${userData.lastName}` : user.email || 'Utilisateur'}</p>
+                    <p className="text-xs text-gray-500">{user.email}</p>
+                  </div>
+                  <div className="py-1">
+                    <Link to="/client/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Paramètres</Link>
+                    <button 
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center"
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Se déconnecter
+                    </button>
+                  </div>
+                </div>
               </div>
+              
+              {/* Menu mobile */}
+              <button className="md:hidden p-2 rounded-lg hover:bg-white/10">
+                <Menu className="h-6 w-6 text-white" />
+              </button>
             </div>
           </div>
         </div>
@@ -283,6 +403,15 @@ export default function ClientAppointments() {
             Nouveau rendez-vous
           </Link>
         </div>
+
+        {/* Message de confirmation/erreur */}
+        {cancellationMessage && (
+          <div className={`mb-4 p-4 rounded-lg ${
+            cancellationMessage.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          }`}>
+            {cancellationMessage.message}
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="mb-6 border-b border-gray-200">
@@ -521,16 +650,41 @@ export default function ClientAppointments() {
 
                 {/* Buttons */}
                 <div className="flex space-x-3 mt-6">
-                  {selectedAppointment.status === 'pending' && (
-                    <>
-                      <button className="flex-1 py-2 px-4 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium">
-                        Confirmer
-                      </button>
-                      <button className="flex-1 py-2 px-4 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium">
-                        Annuler
-                      </button>
-                    </>
+                  {selectedAppointment.status === 'pending' && isAppointmentCancellable(selectedAppointment) && (
+                    <button 
+                      onClick={() => cancelAppointment(selectedAppointment.id)}
+                      disabled={isCancelling}
+                      className="flex-1 py-2 px-4 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isCancelling ? 'Annulation...' : 'Annuler'}
+                    </button>
                   )}
+                  
+                  {selectedAppointment.status === 'confirmed' && isAppointmentCancellable(selectedAppointment) && (
+                    <button 
+                      onClick={() => cancelAppointment(selectedAppointment.id)}
+                      disabled={isCancelling}
+                      className="flex-1 py-2 px-4 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isCancelling ? 'Annulation...' : 'Annuler'}
+                    </button>
+                  )}
+                  
+                  {(selectedAppointment.status === 'pending' || selectedAppointment.status === 'confirmed') && 
+                   !isAppointmentCancellable(selectedAppointment) && (
+                    <div className="flex-1 p-3 bg-amber-50 text-amber-800 rounded-lg text-sm">
+                      <p className="flex items-center font-medium mb-1">
+                        <AlertCircle className="h-4 w-4 mr-1" />
+                        Annulation impossible
+                      </p>
+                      <p>Le rendez-vous est dans moins de 2 heures. Veuillez contacter directement votre courtier.</p>
+                      <a href="tel:" className="mt-2 flex items-center text-amber-800 font-medium hover:underline">
+                        <Phone className="h-4 w-4 mr-1" />
+                        Contacter le courtier
+                      </a>
+                    </div>
+                  )}
+                  
                   <button 
                     onClick={closeModal}
                     className="flex-1 py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"

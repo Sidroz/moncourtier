@@ -1,0 +1,23 @@
+Configuration du sous-domaine pro.localhost
+===================================
+
+Pour accéder à la page des courtiers via le sous-domaine pro.localhost, suivez ces instructions :
+
+1. Ouvrez un éditeur de texte en tant qu'administrateur (clic droit sur Notepad -> Exécuter en tant qu'administrateur)
+
+2. Ouvrez le fichier hosts situé à :
+   - Windows : C:\Windows\System32\drivers\etc\hosts
+   - Mac/Linux : /etc/hosts
+
+3. Ajoutez la ligne suivante à la fin du fichier :
+   ```
+   127.0.0.1   pro.localhost
+   ```
+
+4. Enregistrez le fichier
+
+5. Redémarrez votre navigateur
+
+6. Vous pouvez maintenant accéder à la page des courtiers via http://pro.localhost:3000
+
+Note : Assurez-vous que votre serveur de développement est en cours d'exécution avec la commande `npm run dev` 

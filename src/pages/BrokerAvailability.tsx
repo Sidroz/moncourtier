@@ -1,48 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { Link } from 'react-router-dom';
-import { Calendar, Clock, FileText, Settings, LogOut, Users, BarChart as ChartBar, Plus, Trash2, User } from 'lucide-react';
-
-// Types pour les disponibilités
-interface TimeSlot {
-  start: string; // Format "HH:mm"
-  end: string; // Format "HH:mm"
-}
-
-interface DayAvailability {
-  enabled: boolean;
-  timeSlots: TimeSlot[];
-}
-
-interface WeeklyAvailability {
-  monday: DayAvailability;
-  tuesday: DayAvailability;
-  wednesday: DayAvailability;
-  thursday: DayAvailability;
-  friday: DayAvailability;
-  saturday: DayAvailability;
-  sunday: DayAvailability;
-}
+import { Calendar, Clock, FileText, Settings, LogOut, Users, BarChart, Building, Plus, Trash2, User, ChevronDown, ChevronUp } from 'lucide-react';
+import { 
+  TimeSlot, 
+  DayAvailability, 
+  WeeklyAvailability, 
+  defaultWeeklyAvailability, 
+  getBrokerAvailability, 
+  updateBrokerAvailability,
+  getCabinetBrokersAvailability,
+  updateBrokerAvailabilityByAdmin
+} from '../services/availabilityService';
+import { getCabinetByBrokerId } from '../services/cabinetService';
 
 const defaultTimeSlot: TimeSlot = { start: "08:00", end: "17:00" };
-
-const defaultDayAvailability: DayAvailability = {
-  enabled: false,
-  timeSlots: [{ ...defaultTimeSlot }]
-};
-
-const defaultWeeklyAvailability: WeeklyAvailability = {
-  monday: { ...defaultDayAvailability, enabled: true },
-  tuesday: { ...defaultDayAvailability, enabled: true },
-  wednesday: { ...defaultDayAvailability, enabled: true },
-  thursday: { ...defaultDayAvailability, enabled: true },
-  friday: { ...defaultDayAvailability, enabled: true },
-  saturday: { ...defaultDayAvailability },
-  sunday: { ...defaultDayAvailability }
-};
 
 // Traduction des jours de la semaine
 const dayTranslations = {
@@ -74,7 +49,22 @@ export default function BrokerAvailability() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
-  const [userData, setUserData] = useState<{ firstName?: string; lastName?: string; }>({});
+  const [userData, setUserData] = useState<{ firstName?: string; lastName?: string; role?: string; cabinetId?: string; }>({});
+  
+  // États pour la gestion des équipes
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isManager, setIsManager] = useState(false);
+  const [hasCabinet, setHasCabinet] = useState(false);
+  const [cabinet, setCabinet] = useState<any>(null);
+  const [teamMembers, setTeamMembers] = useState<{ 
+    brokerId: string; 
+    firstName: string; 
+    lastName: string; 
+    role: string;
+    availability: WeeklyAvailability;
+  }[]>([]);
+  const [selectedMember, setSelectedMember] = useState<string | null>(null);
+  const [showTeamAvailabilities, setShowTeamAvailabilities] = useState(false);
 
   useEffect(() => {
     if (!loadingAuth && user) {
@@ -84,14 +74,30 @@ export default function BrokerAvailability() {
           const userDoc = await getDoc(userDocRef);
           if (userDoc.exists() && userDoc.data().type === 'courtier') {
             setIsAuthorized(true);
+            const userDataFromDB = userDoc.data();
             setUserData({
-              firstName: userDoc.data().firstName || '',
-              lastName: userDoc.data().lastName || ''
+              firstName: userDataFromDB.firstName || '',
+              lastName: userDataFromDB.lastName || '',
+              role: userDataFromDB.role || '',
+              cabinetId: userDataFromDB.cabinetId
             });
             
-            // Récupérer les disponibilités
-            if (userDoc.data().availability) {
-              setAvailability(userDoc.data().availability);
+            setIsAdmin(userDataFromDB.role === 'admin');
+            setIsManager(userDataFromDB.role === 'admin' || userDataFromDB.role === 'manager');
+            setHasCabinet(!!userDataFromDB.cabinetId);
+            
+            // Récupérer les disponibilités de l'utilisateur
+            const userAvailability = await getBrokerAvailability(user.uid);
+            setAvailability(userAvailability);
+            
+            // Si l'utilisateur est admin ou manager et a un cabinet, récupérer le cabinet et l'équipe
+            if ((userDataFromDB.role === 'admin' || userDataFromDB.role === 'manager') && userDataFromDB.cabinetId) {
+              const cabinetData = await getCabinetByBrokerId(user.uid);
+              setCabinet(cabinetData);
+              
+              // Récupérer les membres de l'équipe et leurs disponibilités
+              const teamData = await getCabinetBrokersAvailability(user.uid);
+              setTeamMembers(teamData);
             }
           }
         } catch (err) {
@@ -104,7 +110,8 @@ export default function BrokerAvailability() {
       checkAuthorization();
     }
   }, [user, loadingAuth]);
-
+  
+  // Gestion des disponibilités de l'utilisateur courant
   const handleDayToggle = (day: keyof WeeklyAvailability) => {
     setAvailability(prev => ({
       ...prev,
@@ -159,10 +166,22 @@ export default function BrokerAvailability() {
     setSaveSuccess(false);
     
     try {
-      const userDocRef = doc(db, 'courtiers', user.uid);
-      await updateDoc(userDocRef, {
-        availability
-      });
+      // Si on modifie les disponibilités d'un membre de l'équipe
+      if (selectedMember && selectedMember !== user.uid) {
+        await updateBrokerAvailabilityByAdmin(user.uid, selectedMember, availability);
+        
+        // Mettre à jour la liste des membres
+        setTeamMembers(prev => 
+          prev.map(member => 
+            member.brokerId === selectedMember 
+              ? { ...member, availability } 
+              : member
+          )
+        );
+      } else {
+        // Sinon, on modifie ses propres disponibilités
+        await updateBrokerAvailability(user.uid, availability);
+      }
       
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
@@ -170,6 +189,26 @@ export default function BrokerAvailability() {
       console.error('Erreur lors de la sauvegarde des disponibilités:', error);
     } finally {
       setSaving(false);
+    }
+  };
+  
+  // Sélectionner un membre de l'équipe pour voir/modifier ses disponibilités
+  const handleSelectMember = (memberId: string) => {
+    const member = teamMembers.find(m => m.brokerId === memberId);
+    if (member) {
+      setSelectedMember(memberId);
+      setAvailability(member.availability);
+    }
+  };
+  
+  // Revenir à ses propres disponibilités
+  const handleBackToOwnAvailability = () => {
+    if (user) {
+      const userAvailability = teamMembers.find(m => m.brokerId === user.uid);
+      if (userAvailability) {
+        setAvailability(userAvailability.availability);
+      }
+      setSelectedMember(null);
     }
   };
 
@@ -215,41 +254,43 @@ export default function BrokerAvailability() {
         </div>
       </header>
 
-      <div className="w-full pt-16 flex">
+      <div className="w-full pt-20 flex">
         {/* Sidebar */}
-        <div className="w-24 fixed left-0 top-1/2 transform -translate-y-1/2 h-[600px] py-6 ml-[20px] bg-[#244257] rounded-3xl flex flex-col items-center justify-center shadow-lg">
-          <div className="flex flex-col items-center space-y-6">
-            <Link to="/courtier/calendrier" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+        <div className="w-24 fixed left-0 top-1/2 transform -translate-y-1/2 h-[600px] py-6 ml-[20px] bg-[#244257]/90 backdrop-blur-md rounded-3xl flex flex-col items-center justify-center shadow-xl transition-all duration-300 hover:shadow-2xl animate-fadeIn">
+          <div className="flex flex-col items-center space-y-6 animate-slideIn">
+            <Link to="/courtier/calendrier" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <Calendar className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Agenda</span>
             </Link>
-            <Link to="/courtier/clients" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+            <Link to="/courtier/clients" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <Users className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Clients</span>
             </Link>
-            <Link to="/courtier/disponibilites" className="flex flex-col items-center text-white group transition-all duration-300 relative">
-              <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
-              <Clock className="h-6 w-6 group-hover:scale-110 transition-transform" />
+            <Link to="/courtier/disponibilites" className="flex flex-col items-center text-white group transition-all duration-300 relative w-24">
+              <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-100 transition-opacity -z-10"></div>
+              <Clock className="h-6 w-6 scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Disponibilités</span>
             </Link>
-            <Link to="/courtier/documents" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+            {hasCabinet && (
+              <Link to="/courtier/cabinet" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
+                <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
+                <Building className="h-6 w-6 group-hover:scale-110 transition-transform" />
+                <span className="text-xs mt-2 font-medium">Cabinet</span>
+              </Link>
+            )}
+            <Link to="/courtier/stats" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
-              <FileText className="h-6 w-6 group-hover:scale-110 transition-transform" />
-              <span className="text-xs mt-2 font-medium">Documents</span>
-            </Link>
-            <Link to="/courtier/stats" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
-              <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
-              <ChartBar className="h-6 w-6 group-hover:scale-110 transition-transform" />
+              <BarChart className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Statistiques</span>
             </Link>
-            <Link to="/courtier/settings" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+            <Link to="/courtier/settings" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <Settings className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Paramètres</span>
             </Link>
-            <Link to="/courtier/profil" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+            <Link to="/courtier/profil" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <User className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Profil</span>
@@ -260,7 +301,68 @@ export default function BrokerAvailability() {
         {/* Main Content */}
         <div className="flex-1 ml-[140px] mr-[20px]">
           <div className="bg-white rounded-lg shadow p-4 my-6">
-            <h2 className="text-xl font-semibold mb-3">Gérer mes disponibilités</h2>
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-xl font-semibold">
+                {selectedMember && selectedMember !== user?.uid 
+                  ? `Modifier les disponibilités de ${teamMembers.find(m => m.brokerId === selectedMember)?.firstName} ${teamMembers.find(m => m.brokerId === selectedMember)?.lastName}`
+                  : "Gérer mes disponibilités"}
+              </h2>
+              {selectedMember && selectedMember !== user?.uid && (
+                <button 
+                  onClick={handleBackToOwnAvailability}
+                  className="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded-md transition-colors"
+                >
+                  Revenir à mes disponibilités
+                </button>
+              )}
+            </div>
+            
+            {/* Section des disponibilités de l'équipe (admins et managers seulement) */}
+            {isManager && hasCabinet && (
+              <div className="mb-6 border-b pb-4">
+                <button 
+                  onClick={() => setShowTeamAvailabilities(!showTeamAvailabilities)}
+                  className="flex items-center justify-between w-full text-left px-4 py-2 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+                >
+                  <span className="font-medium">Disponibilités de l'équipe</span>
+                  {showTeamAvailabilities ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                </button>
+                
+                {showTeamAvailabilities && (
+                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {teamMembers.map(member => (
+                      <div 
+                        key={member.brokerId} 
+                        className={`p-3 rounded-md cursor-pointer transition-all ${
+                          selectedMember === member.brokerId 
+                            ? 'bg-blue-100 border-2 border-blue-300' 
+                            : 'bg-gray-50 hover:bg-gray-100 border border-gray-200'
+                        }`}
+                        onClick={() => handleSelectMember(member.brokerId)}
+                      >
+                        <div className="font-medium">{member.firstName} {member.lastName}</div>
+                        <div className="text-sm text-gray-600">
+                          {member.role === 'admin' 
+                            ? 'Administrateur' 
+                            : member.role === 'manager' 
+                            ? 'Gestionnaire' 
+                            : member.role === 'associate' 
+                            ? 'Associé' 
+                            : 'Employé'}
+                        </div>
+                        <div className="mt-2 text-xs text-gray-500">
+                          {Object.entries(member.availability)
+                            .filter(([_, dayData]) => dayData.enabled)
+                            .map(([day]) => dayTranslations[day as keyof typeof dayTranslations])
+                            .join(', ')}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            
             <p className="text-gray-600 mb-4">
               Définissez vos horaires de disponibilité pour chaque jour de la semaine. 
               Ces créneaux seront proposés à vos clients lors de la prise de rendez-vous.
@@ -279,7 +381,7 @@ export default function BrokerAvailability() {
                         onChange={() => handleDayToggle(day)}
                         className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
                       />
-                      <span className="ml-2 font-medium w-24">{dayTranslations[day]}</span>
+                      <span className="ml-2 font-medium w-24">{dayTranslations[day as keyof typeof dayTranslations]}</span>
                     </label>
                   </div>
                   
@@ -329,13 +431,15 @@ export default function BrokerAvailability() {
                 disabled={saving}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
               >
-                {saving ? 'Enregistrement...' : 'Enregistrer mes disponibilités'}
+                {saving ? 'Enregistrement...' : 'Enregistrer les disponibilités'}
               </button>
             </div>
             
             {saveSuccess && (
               <div className="mt-4 p-2 bg-green-100 text-green-800 rounded-md">
-                Vos disponibilités ont été enregistrées avec succès.
+                {selectedMember && selectedMember !== user?.uid 
+                  ? `Les disponibilités de ${teamMembers.find(m => m.brokerId === selectedMember)?.firstName} ${teamMembers.find(m => m.brokerId === selectedMember)?.lastName} ont été enregistrées avec succès.`
+                  : "Vos disponibilités ont été enregistrées avec succès."}
               </div>
             )}
           </div>

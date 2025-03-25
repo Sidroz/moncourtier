@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../firebase';
 import { doc, getDoc, collection, query, where, getDocs, orderBy, Timestamp, addDoc } from 'firebase/firestore';
-import { Calendar, Clock, FileText, Settings, LogOut, Users, BarChart as ChartBar, User, Mail, Phone, Home, Plus, X } from 'lucide-react';
+import { Calendar, Clock, FileText, Settings, LogOut, Users, BarChart as ChartBar, User, Mail, Phone, Home, Plus, X, Building } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -28,7 +28,7 @@ export default function BrokerDashboard() {
   const [user, loading, error] = useAuthState(auth);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
-  const [userData, setUserData] = useState<{ firstName?: string; lastName?: string; }>({});
+  const [userData, setUserData] = useState<{ firstName?: string; lastName?: string; photoURL?: string; }>({});
   const [todayAppointments, setTodayAppointments] = useState<any[]>([]);
   const [loadingAppointments, setLoadingAppointments] = useState(true);
   const [pendingTasks, setPendingTasks] = useState<Task[]>([]);
@@ -44,6 +44,8 @@ export default function BrokerDashboard() {
   const currentDate = new Date();
   const formattedDate = format(currentDate, "EEEE d MMMM yyyy", { locale: fr });
   const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
+  const [hasCabinet, setHasCabinet] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (!loading && user) {
@@ -56,8 +58,13 @@ export default function BrokerDashboard() {
             setIsAuthorized(true);
             setUserData({
               firstName: userDoc.data().firstName || '',
-              lastName: userDoc.data().lastName || ''
+              lastName: userDoc.data().lastName || '',
+              photoURL: userDoc.data().photoURL || '',
             });
+            
+            // Vérifier si le courtier a un cabinet
+            setHasCabinet(!!userDoc.data().cabinetId);
+            setIsAdmin(userDoc.data().role === 'admin');
           }
         } catch (err) {
           console.error('Erreur lors de la vérification de l\'autorisation:', err);
@@ -251,41 +258,43 @@ export default function BrokerDashboard() {
         </div>
       </header>
 
-      <div className="w-full pt-16 flex">
+      <div className="w-full pt-20 flex">
         {/* Sidebar */}
-        <div className="w-24 fixed left-0 top-1/2 transform -translate-y-1/2 h-[600px] py-6 ml-[20px] bg-[#244257] rounded-3xl flex flex-col items-center justify-center shadow-lg">
-          <div className="flex flex-col items-center space-y-6">
-            <Link to="/courtier/calendrier" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+        <div className="w-24 fixed left-0 top-1/2 transform -translate-y-1/2 h-[600px] py-6 ml-[20px] bg-[#244257]/90 backdrop-blur-md rounded-3xl flex flex-col items-center justify-center shadow-xl transition-all duration-300 hover:shadow-2xl animate-fadeIn">
+          <div className="flex flex-col items-center space-y-6 animate-slideIn">
+            <Link to="/courtier/calendrier" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <Calendar className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Agenda</span>
             </Link>
-            <Link to="/courtier/clients" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+            <Link to="/courtier/clients" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <Users className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Clients</span>
             </Link>
-            <Link to="/courtier/disponibilites" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+            <Link to="/courtier/disponibilites" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <Clock className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Disponibilités</span>
             </Link>
-            <Link to="/courtier/documents" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
-              <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
-              <FileText className="h-6 w-6 group-hover:scale-110 transition-transform" />
-              <span className="text-xs mt-2 font-medium">Documents</span>
-            </Link>
-            <Link to="/courtier/stats" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+            {hasCabinet && (
+              <Link to="/courtier/cabinet" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
+                <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
+                <Building className="h-6 w-6 group-hover:scale-110 transition-transform" />
+                <span className="text-xs mt-2 font-medium">Cabinet</span>
+              </Link>
+            )}
+            <Link to="/courtier/stats" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <ChartBar className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Statistiques</span>
             </Link>
-            <Link to="/courtier/settings" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+            <Link to="/courtier/settings" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <Settings className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Paramètres</span>
             </Link>
-            <Link to="/courtier/profil" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+            <Link to="/courtier/profil" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <User className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Profil</span>
@@ -310,7 +319,7 @@ export default function BrokerDashboard() {
           </div>
 
           {/* Quick Links */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <button 
               onClick={() => setIsAddClientModalOpen(true)}
               className="bg-white rounded-lg shadow p-4 flex items-center hover:bg-blue-50 transition duration-300"
@@ -326,6 +335,14 @@ export default function BrokerDashboard() {
               </div>
               <span className="font-medium">Planifier un rendez-vous</span>
             </Link>
+            {(hasCabinet || isAdmin) && (
+              <Link to="/courtier/cabinet" className="bg-white rounded-lg shadow p-4 flex items-center hover:bg-blue-50 transition duration-300">
+                <div className="bg-blue-100 p-3 rounded-full mr-4">
+                  <Building className="h-6 w-6 text-blue-600" />
+                </div>
+                <span className="font-medium">Gérer mon cabinet</span>
+              </Link>
+            )}
             <Link to="/courtier/taches" className="bg-white rounded-lg shadow p-4 flex items-center hover:bg-blue-50 transition duration-300">
               <div className="bg-blue-100 p-3 rounded-full mr-4">
                 <FileText className="h-6 w-6 text-blue-600" />

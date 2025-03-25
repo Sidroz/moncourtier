@@ -4,8 +4,7 @@ import { getAuth, updateEmail, signOut, onAuthStateChanged } from 'firebase/auth
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { toast, Toaster } from 'react-hot-toast';
-import { LoadScript } from '@react-google-maps/api';
-import { Calendar, LogOut, User, Lock, MapPin, Shield, ArrowRight, HelpCircle, Upload } from 'lucide-react';
+import { Calendar, LogOut, User, Lock, MapPin, Shield, ArrowRight, HelpCircle, Upload, Bell, Menu, ChevronDown } from 'lucide-react';
 import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
@@ -131,6 +130,34 @@ export default function ClientSettings() {
     postalCode: ''
   });
 
+  // Vérifier si l'API Google Maps est déjà chargée
+  useEffect(() => {
+    // Si window.google et window.google.maps existent, l'API est déjà chargée
+    if (window.google && window.google.maps) {
+      setScriptLoaded(true);
+    } else {
+      // Vérifier périodiquement si l'API a été chargée par un autre composant
+      const checkGoogleMapsLoaded = setInterval(() => {
+        if (window.google && window.google.maps) {
+          setScriptLoaded(true);
+          clearInterval(checkGoogleMapsLoaded);
+        }
+      }, 500);
+
+      // Nettoyer l'intervalle si le composant est démonté
+      return () => clearInterval(checkGoogleMapsLoaded);
+    }
+  }, []);
+
+  // Surveiller l'état d'authentification
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (_user) => {
+      setAuthLoading(false);
+    });
+    
+    return () => unsubscribe();
+  }, [auth]);
+
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (!auth.currentUser && !authLoading) {
@@ -156,23 +183,18 @@ export default function ClientSettings() {
           }
         }
       } catch (error) {
+        console.error('Erreur lors du chargement du profil:', error);
         toast.error('Erreur lors du chargement du profil');
       } finally {
-        setLoading(false);
+        setLoading(false); // Toujours passer loading à false, même en cas d'erreur
       }
     };
 
-    fetchUserProfile();
+    // Ne lancer fetchUserProfile que lorsque authLoading est terminé
+    if (!authLoading) {
+      fetchUserProfile();
+    }
   }, [auth.currentUser, navigate, authLoading]);
-
-  // Surveiller l'état d'authentification
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (_user) => {
-      setAuthLoading(false);
-    });
-    
-    return () => unsubscribe();
-  }, [auth]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -326,78 +348,137 @@ export default function ClientSettings() {
     }
   };
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="bg-white p-8 rounded-lg shadow-md flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="text-gray-600">Chargement de votre profil...</p>
+        </div>
       </div>
     );
+  }
+
+  // Si l'utilisateur n'est pas connecté et le chargement est terminé
+  if (!auth.currentUser && !authLoading) {
+    navigate('/login');
+    return null;
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-[#244257] text-white">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Calendar className="h-8 w-8" />
-            <span className="text-2xl font-bold">MonCourtier</span>
-          </div>
-          <div className="flex items-center space-x-4">
-            <nav className="flex space-x-4">
-              <Link 
-                to="/client" 
-                className={`px-4 py-2 rounded-lg hover:bg-blue-800 ${
-                  location.pathname === '/client' 
-                    ? 'bg-white text-[#244257]' 
-                    : 'bg-[#244257] text-white hover:bg-blue-800'
-                }`}
-              >
-                Accueil
-              </Link>
-              <button className="px-4 py-2 bg-[#244257] text-white rounded-lg hover:bg-blue-800">
-                Rendez-vous
-              </button>
-              <button className="px-4 py-2 bg-[#244257] text-white rounded-lg hover:bg-blue-800">
-                Vos Courtiers
-              </button>
-              <Link 
-                to="/client/settings" 
-                className={`px-4 py-2 rounded-lg hover:bg-gray-100 ${
-                  location.pathname.includes('/client/settings') || location.pathname.includes('/client/security')
-                    ? 'bg-white text-[#244257]' 
-                    : 'bg-[#244257] text-white hover:bg-blue-800'
-                }`}
-              >
-                Profil
-              </Link>
-            </nav>
-            <button className="flex items-center space-x-2 px-4 py-2 bg-[#244257] text-white rounded-lg hover:bg-blue-800">
-              <HelpCircle className="h-5 w-5" />
-              <span>Centre d'aide</span>
-            </button>
-            <div className="flex items-center space-x-2">
-              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                {profile.photoURL ? (
-                  <img 
-                    src={profile.photoURL} 
-                    alt="Photo de profil"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <User className="h-6 w-6 text-gray-500" />
-                )}
+      <header className="bg-gradient-to-r from-[#1a3548] to-[#244257] text-white shadow-md border-b border-[#1a3548]/10">
+        <div className="max-w-7xl mx-auto px-6 py-3">
+          {/* Logo et navigation principale */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center space-x-2 py-2">
+                <div className="bg-white/10 p-1.5 rounded-lg">
+                  <Calendar className="h-6 w-6 text-blue-100" />
+                </div>
+                <Link to="/" className="text-2xl font-bold hover:text-blue-100 transition-colors">
+                  MonCourtier
+                </Link>
               </div>
-              <div className="flex flex-col">
-                <span className="text-sm">{profile.firstName} {profile.lastName}</span>
-                <button 
-                  onClick={handleSignOut}
-                  className="text-sm text-gray-300 hover:text-white text-left flex items-center"
+              
+              <nav className="hidden md:flex items-center ml-10 space-x-1">
+                <Link 
+                  to="/client" 
+                  className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
+                    location.pathname === '/client' 
+                      ? 'bg-white/10 text-white' 
+                      : 'text-gray-100 hover:bg-white/5'
+                  }`}
                 >
-                  <LogOut className="h-3 w-3 mr-1" />
-                  Se déconnecter
+                  Accueil
+                </Link>
+                <Link 
+                  to="/client/rendezvous" 
+                  className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
+                    location.pathname === '/client/rendezvous' 
+                      ? 'bg-white/10 text-white' 
+                      : 'text-gray-100 hover:bg-white/5'
+                  }`}
+                >
+                  Rendez-vous
+                </Link>
+                <Link 
+                  to="/client/vos-courtiers" 
+                  className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
+                    location.pathname === '/client/vos-courtiers' 
+                      ? 'bg-white/10 text-white' 
+                      : 'text-gray-100 hover:bg-white/5'
+                  }`}
+                >
+                  Vos Courtiers
+                </Link>
+                <Link 
+                  to="/client/settings" 
+                  className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
+                    location.pathname.includes('/client/settings') || location.pathname.includes('/client/securite')
+                      ? 'bg-white/10 text-white' 
+                      : 'text-gray-100 hover:bg-white/5'
+                  }`}
+                >
+                  Profil
+                </Link>
+              </nav>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              {/* Icônes d'action */}
+              <button className="relative p-2 rounded-full hover:bg-white/10 transition-colors">
+                <Bell className="h-5 w-5 text-gray-100" />
+                <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
+              </button>
+              
+              <button className="hidden md:flex items-center space-x-2 px-3 py-1.5 bg-white/10 text-white rounded-lg border border-white/5 hover:bg-white/15 transition-colors text-sm">
+                <HelpCircle className="h-4 w-4" />
+                <span>Centre d'aide</span>
+              </button>
+              
+              {/* Menu utilisateur */}
+              <div className="relative group">
+                <button className="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-white/10 transition-colors">
+                  <div className="w-8 h-8 rounded-full bg-blue-800/30 ring-2 ring-white/20 flex items-center justify-center overflow-hidden">
+                    {profile.photoURL ? (
+                      <img 
+                        src={profile.photoURL} 
+                        alt="Photo de profil"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="h-5 w-5 text-blue-100" />
+                    )}
+                  </div>
+                  <span className="hidden md:block text-sm font-medium">{profile.firstName} {profile.lastName}</span>
+                  <ChevronDown className="h-4 w-4 text-gray-300 hidden md:block" />
                 </button>
+                
+                {/* Menu déroulant */}
+                <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50 transform origin-top-right">
+                  <div className="py-2 px-3 border-b border-gray-100">
+                    <p className="text-sm font-medium text-gray-900">{profile.firstName} {profile.lastName}</p>
+                    <p className="text-xs text-gray-500">{profile.email}</p>
+                  </div>
+                  <div className="py-1">
+                    <Link to="/client/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Paramètres</Link>
+                    <button 
+                      onClick={handleSignOut}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center"
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Se déconnecter
+                    </button>
+                  </div>
+                </div>
               </div>
+              
+              {/* Menu mobile */}
+              <button className="md:hidden p-2 rounded-lg hover:bg-white/10">
+                <Menu className="h-6 w-6 text-white" />
+              </button>
             </div>
           </div>
         </div>
@@ -418,7 +499,7 @@ export default function ClientSettings() {
               <User className="h-5 w-5" />
               <span>Mon Profil</span>
             </button>
-            <Link to="/client/security">
+            <Link to="/client/securite">
               <button className="bg-white text-[#244257] px-6 py-3 rounded-lg shadow-md hover:bg-gray-50 transition-colors duration-200 flex items-center space-x-2">
                 <Shield className="h-5 w-5" />
                 <span>Sécurité</span>
@@ -441,190 +522,183 @@ export default function ClientSettings() {
               </div>
             </div>
 
-            <LoadScript 
-              googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''}
-              onLoad={() => setScriptLoaded(true)}
-              onError={(error) => console.error('Google Maps script failed to load', error)}
-              libraries={['places']}
-            >
-              <form onSubmit={handleSubmit} className="space-y-8">
-                {/* Profile Picture */}
-                <div className="flex items-center space-x-6">
-                  <div className="relative w-32 h-32 rounded-2xl bg-gray-50 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-[#244257] transition-colors duration-200 overflow-hidden">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                      onChange={handleFileChange}
+            <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Profile Picture */}
+              <div className="flex items-center space-x-6">
+                <div className="relative w-32 h-32 rounded-2xl bg-gray-50 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-[#244257] transition-colors duration-200 overflow-hidden">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    onChange={handleFileChange}
+                  />
+                  {profile.photoURL ? (
+                    <img 
+                      src={profile.photoURL} 
+                      alt="Photo de profil"
+                      className="absolute inset-0 w-full h-full object-cover"
                     />
-                    {profile.photoURL ? (
-                      <img 
-                        src={profile.photoURL} 
-                        alt="Photo de profil"
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center">
-                        <Upload className="w-8 h-8 text-gray-400" />
-                        <span className="mt-2 text-sm text-gray-500">Photo de profil</span>
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900">Photo de profil</h3>
-                    <p className="text-sm text-gray-500">Format JPG ou PNG. Taille max 1MB</p>
-                  </div>
+                  ) : (
+                    <div className="flex flex-col items-center">
+                      <Upload className="w-8 h-8 text-gray-400" />
+                      <span className="mt-2 text-sm text-gray-500">Photo de profil</span>
+                    </div>
+                  )}
                 </div>
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">Photo de profil</h3>
+                  <p className="text-sm text-gray-500">Format JPG ou PNG. Taille max 1MB</p>
+                </div>
+              </div>
 
-                {/* Personal Information */}
+              {/* Personal Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                    Prénom
+                  </label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    id="firstName"
+                    value={profile.firstName}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#244257] focus:border-transparent transition-shadow duration-200"
+                    placeholder="Votre prénom"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+                    Nom
+                  </label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    id="lastName"
+                    value={profile.lastName}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#244257] focus:border-transparent transition-shadow duration-200"
+                    placeholder="Votre nom"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    id="email"
+                    value={profile.email}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#244257] focus:border-transparent transition-shadow duration-200"
+                    placeholder="votre@email.com"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                    Téléphone
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    id="phone"
+                    value={profile.phone}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#244257] focus:border-transparent transition-shadow duration-200"
+                    placeholder="Votre numéro de téléphone"
+                  />
+                </div>
+              </div>
+
+              {/* Address Information */}
+              <div className="space-y-6">
+                <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                  <MapPin className="h-5 w-5 mr-2 text-[#244257]" />
+                  Adresse
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
-                      Prénom
+                  <div className="md:col-span-2">
+                    <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+                      Adresse
                     </label>
-                    <input
-                      type="text"
-                      name="firstName"
-                      id="firstName"
-                      value={profile.firstName}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#244257] focus:border-transparent transition-shadow duration-200"
-                      placeholder="Votre prénom"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
-                      Nom
-                    </label>
-                    <input
-                      type="text"
-                      name="lastName"
-                      id="lastName"
-                      value={profile.lastName}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#244257] focus:border-transparent transition-shadow duration-200"
-                      placeholder="Votre nom"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      id="email"
-                      value={profile.email}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#244257] focus:border-transparent transition-shadow duration-200"
-                      placeholder="votre@email.com"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                      Téléphone
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      id="phone"
-                      value={profile.phone}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#244257] focus:border-transparent transition-shadow duration-200"
-                      placeholder="Votre numéro de téléphone"
-                    />
-                  </div>
-                </div>
-
-                {/* Address Information */}
-                <div className="space-y-6">
-                  <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                    <MapPin className="h-5 w-5 mr-2 text-[#244257]" />
-                    Adresse
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="md:col-span-2">
-                      <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
-                        Adresse
-                      </label>
-                      {scriptLoaded ? (
-                        <AddressAutocomplete 
-                          value={profile.address} 
-                          onChange={(value) => handleInputChange({ target: { name: 'address', value } } as any)} 
-                          onSelect={handleAddressSelect} 
-                        />
-                      ) : (
-                        <input
-                          type="text"
-                          name="address"
-                          id="address"
-                          value={profile.address}
-                          onChange={handleInputChange}
-                          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#244257] focus:border-transparent transition-shadow duration-200"
-                          placeholder="Chargement de l'autocomplétion..."
-                        />
-                      )}
-                    </div>
-                    <div>
-                      <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
-                        Ville
-                      </label>
-                      <input
-                        type="text"
-                        name="city"
-                        id="city"
-                        value={profile.city}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#244257] focus:border-transparent transition-shadow duration-200"
-                        placeholder="Votre ville"
+                    {scriptLoaded ? (
+                      <AddressAutocomplete 
+                        value={profile.address} 
+                        onChange={(value) => handleInputChange({ target: { name: 'address', value } } as any)} 
+                        onSelect={handleAddressSelect} 
                       />
-                    </div>
-                    <div>
-                      <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
-                        Code postal
-                      </label>
-                      <input
-                        type="text"
-                        name="postalCode"
-                        id="postalCode"
-                        value={profile.postalCode}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#244257] focus:border-transparent transition-shadow duration-200"
-                        placeholder="Code postal"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Submit Button */}
-                <div className="flex justify-end pt-6">
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="bg-[#244257] text-white px-8 py-3 rounded-lg shadow-md hover:bg-[#1a3244] transition-colors duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {saving ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                        <span>Enregistrement...</span>
-                      </>
                     ) : (
-                      <>
-                        <span>Enregistrer les modifications</span>
-                        <ArrowRight className="h-5 w-5" />
-                      </>
+                      <input
+                        type="text"
+                        name="address"
+                        id="address"
+                        value={profile.address}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#244257] focus:border-transparent transition-shadow duration-200"
+                        placeholder="Chargement de l'autocomplétion..."
+                      />
                     )}
-                  </button>
+                  </div>
+                  <div>
+                    <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
+                      Ville
+                    </label>
+                    <input
+                      type="text"
+                      name="city"
+                      id="city"
+                      value={profile.city}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#244257] focus:border-transparent transition-shadow duration-200"
+                      placeholder="Votre ville"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
+                      Code postal
+                    </label>
+                    <input
+                      type="text"
+                      name="postalCode"
+                      id="postalCode"
+                      value={profile.postalCode}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#244257] focus:border-transparent transition-shadow duration-200"
+                      placeholder="Code postal"
+                    />
+                  </div>
                 </div>
-              </form>
-            </LoadScript>
+              </div>
+
+              {/* Submit Button */}
+              <div className="flex justify-end pt-6">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="bg-[#244257] text-white px-8 py-3 rounded-lg shadow-md hover:bg-[#1a3244] transition-colors duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {saving ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <span>Enregistrement...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Enregistrer les modifications</span>
+                      <ArrowRight className="h-5 w-5" />
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </div>
       
       {/* Toaster pour les notifications */}
       <Toaster 
-        position="top-right"
+        position="top-center"
         toastOptions={{
           duration: 3000,
           style: {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { User, LogOut, HelpCircle, Calendar, Star, Phone, Mail, MapPin, Search, ChevronRight, Plus, X } from 'lucide-react';
+import { User, LogOut, HelpCircle, Calendar, Phone, Mail, MapPin, Search, ChevronRight, Plus, Bell, Menu, ChevronDown } from 'lucide-react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
@@ -34,7 +34,6 @@ export default function ClientVosCourtiers() {
     photoURL?: string;
   } | null>(null);
   const [courtiers, setCourtiers] = useState<Courtier[]>([]);
-  const [selectedCourtier, setSelectedCourtier] = useState<Courtier | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [authChecked, setAuthChecked] = useState(false);
   const location = useLocation();
@@ -123,14 +122,6 @@ export default function ClientVosCourtiers() {
     }
   }, [user, authChecked]);
 
-  const handleSelectCourtier = (courtier: Courtier) => {
-    setSelectedCourtier(courtier);
-  };
-
-  const closeModal = () => {
-    setSelectedCourtier(null);
-  };
-
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -148,27 +139,6 @@ export default function ClientVosCourtiers() {
       (courtier.specialty && courtier.specialty.some(s => s.toLowerCase().includes(searchLower)));
   });
 
-  const renderStars = (rating?: number) => {
-    if (!rating) return 'Non évalué';
-    
-    const fullStars = Math.floor(rating);
-    const halfStar = rating % 1 >= 0.5;
-    const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
-    
-    return (
-      <div className="flex items-center">
-        {[...Array(fullStars)].map((_, i) => (
-          <Star key={`full-${i}`} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-        ))}
-        {halfStar && <Star className="h-4 w-4 text-yellow-400" />}
-        {[...Array(emptyStars)].map((_, i) => (
-          <Star key={`empty-${i}`} className="h-4 w-4 text-gray-300" />
-        ))}
-        <span className="ml-1 text-sm text-gray-600">{rating.toFixed(1)}</span>
-      </div>
-    );
-  };
-
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
   }
@@ -184,81 +154,117 @@ export default function ClientVosCourtiers() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-[#244257] text-white">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Calendar className="h-8 w-8" />
-            <Link to="/" className="text-2xl font-bold hover:text-gray-200 transition-colors">MonCourtier</Link>
-          </div>
-          <div className="flex items-center space-x-4">
-            <nav className="flex space-x-4">
-              <Link 
-                to="/client" 
-                className={`px-4 py-2 rounded-lg hover:bg-blue-800 ${
-                  location.pathname === '/client' 
-                    ? 'bg-white text-[#244257]' 
-                    : 'bg-[#244257] text-white hover:bg-blue-800'
-                }`}
-              >
-                Accueil
-              </Link>
-              <Link 
-                to="/client/appointments" 
-                className={`px-4 py-2 rounded-lg hover:bg-blue-800 ${
-                  location.pathname === '/client/appointments' 
-                    ? 'bg-white text-[#244257]' 
-                    : 'bg-[#244257] text-white hover:bg-blue-800'
-                }`}
-              >
-                Rendez-vous
-              </Link>
-              <Link 
-                to="/client/brokers" 
-                className={`px-4 py-2 rounded-lg hover:bg-gray-100 ${
-                  location.pathname === '/client/brokers' 
-                    ? 'bg-white text-[#244257]' 
-                    : 'bg-[#244257] text-white hover:bg-blue-800'
-                }`}
-              >
-                Vos Courtiers
-              </Link>
-              <Link 
-                to="/client/settings" 
-                className={`px-4 py-2 rounded-lg hover:bg-blue-800 ${
-                  location.pathname.includes('/client/settings') || location.pathname.includes('/client/security')
-                    ? 'bg-white text-[#244257]' 
-                    : 'bg-[#244257] text-white hover:bg-blue-800'
-                }`}
-              >
-                Profil
-              </Link>
-            </nav>
-            <button className="flex items-center space-x-2 px-4 py-2 bg-[#244257] text-white rounded-lg hover:bg-blue-800">
-              <HelpCircle className="h-5 w-5" />
-              <span>Centre d'aide</span>
-            </button>
-            <div className="flex items-center space-x-2">
-              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                {userData?.photoURL ? (
-                  <img 
-                    src={userData.photoURL} 
-                    alt="Photo de profil"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <User className="h-6 w-6 text-gray-500" />
-                )}
+      <header className="bg-gradient-to-r from-[#1a3548] to-[#244257] text-white shadow-md border-b border-[#1a3548]/10">
+        <div className="max-w-7xl mx-auto px-6 py-3">
+          {/* Logo et navigation principale */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center space-x-2 py-2">
+                <div className="bg-white/10 p-1.5 rounded-lg">
+                  <Calendar className="h-6 w-6 text-blue-100" />
+                </div>
+                <Link to="/" className="text-2xl font-bold hover:text-blue-100 transition-colors">
+                  MonCourtier
+                </Link>
               </div>
-              <div className="flex flex-col">
-                <span className="text-sm">{userData ? `${userData.firstName} ${userData.lastName}` : user.email || 'Utilisateur'}</span>
-                <button 
-                  onClick={handleLogout}
-                  className="text-sm text-gray-300 hover:text-white text-left flex items-center"
+              
+              <nav className="hidden md:flex items-center ml-10 space-x-1">
+                <Link 
+                  to="/client" 
+                  className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
+                    location.pathname === '/client' 
+                      ? 'bg-white/10 text-white' 
+                      : 'text-gray-100 hover:bg-white/5'
+                  }`}
                 >
-                  <LogOut className="h-3 w-3 mr-1" />
-                  Se déconnecter
+                  Accueil
+                </Link>
+                <Link 
+                  to="/client/rendezvous" 
+                  className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
+                    location.pathname === '/client/rendezvous' 
+                      ? 'bg-white/10 text-white' 
+                      : 'text-gray-100 hover:bg-white/5'
+                  }`}
+                >
+                  Rendez-vous
+                </Link>
+                <Link 
+                  to="/client/vos-courtiers" 
+                  className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
+                    location.pathname === '/client/vos-courtiers' 
+                      ? 'bg-white/10 text-white' 
+                      : 'text-gray-100 hover:bg-white/5'
+                  }`}
+                >
+                  Vos Courtiers
+                </Link>
+                <Link 
+                  to="/client/settings" 
+                  className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
+                    location.pathname.includes('/client/settings') || location.pathname.includes('/client/security')
+                      ? 'bg-white/10 text-white' 
+                      : 'text-gray-100 hover:bg-white/5'
+                  }`}
+                >
+                  Profil
+                </Link>
+              </nav>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              {/* Icônes d'action */}
+              <button className="relative p-2 rounded-full hover:bg-white/10 transition-colors">
+                <Bell className="h-5 w-5 text-gray-100" />
+                <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
+              </button>
+              
+              <button className="hidden md:flex items-center space-x-2 px-3 py-1.5 bg-white/10 text-white rounded-lg border border-white/5 hover:bg-white/15 transition-colors text-sm">
+                <HelpCircle className="h-4 w-4" />
+                <span>Centre d'aide</span>
+              </button>
+              
+              {/* Menu utilisateur */}
+              <div className="relative group">
+                <button className="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-white/10 transition-colors">
+                  <div className="w-8 h-8 rounded-full bg-blue-800/30 ring-2 ring-white/20 flex items-center justify-center overflow-hidden">
+                    {userData?.photoURL ? (
+                      <img 
+                        src={userData.photoURL} 
+                        alt="Photo de profil"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="h-5 w-5 text-blue-100" />
+                    )}
+                  </div>
+                  <span className="hidden md:block text-sm font-medium">{userData ? `${userData.firstName} ${userData.lastName}` : user.email || 'Utilisateur'}</span>
+                  <ChevronDown className="h-4 w-4 text-gray-300 hidden md:block" />
                 </button>
+                
+                {/* Menu déroulant */}
+                <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50 transform origin-top-right">
+                  <div className="py-2 px-3 border-b border-gray-100">
+                    <p className="text-sm font-medium text-gray-900">{userData ? `${userData.firstName} ${userData.lastName}` : user.email || 'Utilisateur'}</p>
+                    <p className="text-xs text-gray-500">{user.email}</p>
+                  </div>
+                  <div className="py-1">
+                    <Link to="/client/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Paramètres</Link>
+                    <button 
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center"
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Se déconnecter
+                    </button>
+                  </div>
+                </div>
               </div>
+              
+              {/* Menu mobile */}
+              <button className="md:hidden p-2 rounded-lg hover:bg-white/10">
+                <Menu className="h-6 w-6 text-white" />
+              </button>
             </div>
           </div>
         </div>
@@ -268,7 +274,7 @@ export default function ClientVosCourtiers() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Vos Courtiers</h1>
           <Link 
-            to="/search"
+            to="/"
             className="inline-flex items-center justify-center px-4 py-2 bg-[#244257] text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
           >
             <Plus className="h-5 w-5 mr-2" />
@@ -339,9 +345,12 @@ export default function ClientVosCourtiers() {
                   <div>
                     <h2 className="text-xl font-semibold text-gray-900">{courtier.firstName} {courtier.lastName}</h2>
                     <p className="text-gray-500">{courtier.specialty && courtier.specialty.slice(0, 2).join(' • ')}</p>
-                    <div className="mt-1">
-                      {renderStars(courtier.rating)}
-                    </div>
+                    {courtier.address && (
+                      <p className="text-gray-500 text-sm mt-1">
+                        <MapPin className="h-3 w-3 inline mr-1" />
+                        {courtier.address}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -359,24 +368,18 @@ export default function ClientVosCourtiers() {
                       <span>{courtier.phoneNumber}</span>
                     </div>
                   )}
-                  {courtier.address && (
-                    <div className="flex items-center text-gray-700">
-                      <MapPin className="h-4 w-4 mr-3 text-gray-400" />
-                      <span className="truncate">{courtier.address}</span>
-                    </div>
-                  )}
                 </div>
 
                 <div className="flex space-x-2">
-                  <button 
-                    onClick={() => handleSelectCourtier(courtier)}
+                  <Link 
+                    to={`/broker-profil/${courtier.id}`}
                     className="flex-1 flex items-center justify-center space-x-2 text-[#244257] hover:text-blue-700 font-medium py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     <span>Voir le profil</span>
                     <ChevronRight className="h-4 w-4" />
-                  </button>
+                  </Link>
                   <Link 
-                    to={`/search?courtier=${courtier.id}`}
+                    to={`/appointment-booking/${courtier.id}`}
                     className="flex-1 flex items-center justify-center space-x-2 bg-[#244257] text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     <Calendar className="h-4 w-4" />
@@ -385,125 +388,6 @@ export default function ClientVosCourtiers() {
                 </div>
               </div>
             ))}
-          </div>
-        )}
-
-        {/* Modal for courtier details */}
-        {selectedCourtier && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl mx-auto overflow-hidden">
-              <div className="bg-[#244257] py-3 px-6">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-xl font-bold text-white">Profil du Courtier</h2>
-                  <button 
-                    onClick={closeModal}
-                    className="text-white hover:text-gray-100"
-                  >
-                    <X className="h-6 w-6" />
-                  </button>
-                </div>
-              </div>
-              
-              <div className="p-6">
-                {/* Courtier header info */}
-                <div className="flex flex-col md:flex-row md:items-center md:space-x-6 mb-6">
-                  <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden mb-4 md:mb-0">
-                    {selectedCourtier.photoUrl ? (
-                      <img 
-                        src={selectedCourtier.photoUrl} 
-                        alt={`${selectedCourtier.firstName} ${selectedCourtier.lastName}`}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <User className="h-12 w-12 text-gray-500" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-bold text-gray-900">{selectedCourtier.firstName} {selectedCourtier.lastName}</h3>
-                    {selectedCourtier.specialty && (
-                      <p className="text-gray-600">{selectedCourtier.specialty.join(' • ')}</p>
-                    )}
-                    <div className="mt-2">
-                      {renderStars(selectedCourtier.rating)}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Contact info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
-                  {selectedCourtier.contactEmail && (
-                    <div className="flex items-center">
-                      <Mail className="h-5 w-5 mr-3 text-gray-500" />
-                      <div>
-                        <p className="text-xs text-gray-500">Email</p>
-                        <p className="text-gray-800">{selectedCourtier.contactEmail}</p>
-                      </div>
-                    </div>
-                  )}
-                  {selectedCourtier.phoneNumber && (
-                    <div className="flex items-center">
-                      <Phone className="h-5 w-5 mr-3 text-gray-500" />
-                      <div>
-                        <p className="text-xs text-gray-500">Téléphone</p>
-                        <p className="text-gray-800">{selectedCourtier.phoneNumber}</p>
-                      </div>
-                    </div>
-                  )}
-                  {selectedCourtier.address && (
-                    <div className="flex items-center col-span-full">
-                      <MapPin className="h-5 w-5 mr-3 text-gray-500" />
-                      <div>
-                        <p className="text-xs text-gray-500">Adresse</p>
-                        <p className="text-gray-800">{selectedCourtier.address}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Bio */}
-                {selectedCourtier.bio && (
-                  <div className="mb-6">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-2">À propos</h4>
-                    <p className="text-gray-700">{selectedCourtier.bio}</p>
-                  </div>
-                )}
-
-                {/* Experience */}
-                {selectedCourtier.experiences && selectedCourtier.experiences.length > 0 && (
-                  <div className="mb-6">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-2">Expérience professionnelle</h4>
-                    <div className="space-y-3">
-                      {selectedCourtier.experiences.map((exp, index) => (
-                        <div key={index} className="border-l-2 border-gray-200 pl-4">
-                          <p className="font-medium">{exp.position}</p>
-                          <p className="text-gray-600">{exp.company}</p>
-                          <p className="text-sm text-gray-500">
-                            {exp.startYear} - {exp.endYear || 'Présent'}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Buttons */}
-                <div className="flex space-x-3 mt-6">
-                  <Link 
-                    to={`/search?courtier=${selectedCourtier.id}`}
-                    className="flex-1 py-2 px-4 bg-[#244257] text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center"
-                  >
-                    <Calendar className="h-5 w-5 mr-2" />
-                    Prendre rendez-vous
-                  </Link>
-                  <button 
-                    onClick={closeModal}
-                    className="flex-1 py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
-                  >
-                    Fermer
-                  </button>
-                </div>
-              </div>
-            </div>
           </div>
         )}
       </main>

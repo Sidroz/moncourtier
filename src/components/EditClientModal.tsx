@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, AlertTriangle } from 'lucide-react';
 import { Timestamp } from 'firebase/firestore';
 import { updateClient, getClientById } from '../services/clientService';
 import { createBrokerClientRelation } from '../services/brokerClientRelationService';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
 
 interface EditClientModalProps {
   isOpen: boolean;
@@ -39,6 +41,7 @@ export default function EditClientModal({ isOpen, onClose, brokerId, brokerName,
   const [errors, setErrors] = useState<Partial<ClientFormData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasUserAccount, setHasUserAccount] = useState(false);
 
   // Charger les données du client
   useEffect(() => {
@@ -58,6 +61,25 @@ export default function EditClientModal({ isOpen, onClose, brokerId, brokerName,
               postalCode: client.postalCode || '',
               notes: client.notes || ''
             });
+            
+            // Vérifier si l'email du client correspond à un compte utilisateur existant
+            try {
+              // Cette vérification pourrait être déplacée dans un service dédié
+              const usersRef = collection(db, 'users');
+              const q = query(
+                usersRef,
+                where('email', '==', client.email),
+                where('type', '==', 'client')
+              );
+              const querySnapshot = await getDocs(q);
+              
+              // Si on trouve un utilisateur avec cet email et de type 'client', c'est un compte utilisateur
+              setHasUserAccount(!querySnapshot.empty);
+            } catch (error) {
+              console.error('Erreur lors de la vérification du compte utilisateur:', error);
+              // En cas d'erreur, on utilise la méthode de secours
+              setHasUserAccount(client.hasAccount === true || client.type === 'client');
+            }
           }
         } catch (error) {
           console.error('Erreur lors du chargement des données du client:', error);
@@ -89,18 +111,24 @@ export default function EditClientModal({ isOpen, onClose, brokerId, brokerName,
   const validateForm = (): boolean => {
     const newErrors: Partial<ClientFormData> = {};
     
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = 'Le prénom est requis';
-    }
-    
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Le nom est requis';
-    }
-    
-    if (!formData.email.trim()) {
-      newErrors.email = 'L\'email est requis';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email invalide';
+    if (!hasUserAccount) {
+      // Validation complète seulement pour les clients sans compte utilisateur
+      if (!formData.firstName.trim()) {
+        newErrors.firstName = 'Le prénom est requis';
+      }
+      
+      if (!formData.lastName.trim()) {
+        newErrors.lastName = 'Le nom est requis';
+      }
+      
+      if (!formData.email.trim()) {
+        newErrors.email = 'L\'email est requis';
+      } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+        newErrors.email = 'Email invalide';
+      }
+    } else {
+      // Pour les clients avec compte, on ne valide que les notes
+      // Pas de validation spécifique pour les notes
     }
     
     setErrors(newErrors);
@@ -117,38 +145,54 @@ export default function EditClientModal({ isOpen, onClose, brokerId, brokerName,
     setIsSubmitting(true);
     
     try {
-      // Mettre à jour le client
-      const success = await updateClient(clientId, {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        phone: formData.phone || '',
-        address: formData.address || '',
-        city: formData.city || '',
-        postalCode: formData.postalCode || '',
-        notes: formData.notes || ''
-      });
-      
-      if (success) {
-        // Mettre à jour la relation courtier-client avec les nouvelles informations
+      if (hasUserAccount) {
+        // Pour les clients avec compte utilisateur, on ne met à jour que les notes
+        // et on met à jour la relation courtier-client
         await createBrokerClientRelation(
           brokerId,
           clientId,
           `${formData.firstName} ${formData.lastName}`,
           brokerName,
-          Timestamp.now(), // On utilise la date actuelle comme date de mise à jour
+          Timestamp.now(),
           formData.email,
           formData.phone || '',
           formData.address || '',
           formData.notes || ''
         );
+      } else {
+        // Pour les clients sans compte, on met à jour toutes les informations
+        const success = await updateClient(clientId, {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phone: formData.phone || '',
+          address: formData.address || '',
+          city: formData.city || '',
+          postalCode: formData.postalCode || '',
+          notes: formData.notes || ''
+        });
         
-        onClose();
-        
-        // Appeler la fonction de succès si elle est fournie
-        if (onSuccess) {
-          onSuccess();
+        if (success) {
+          // Mettre à jour la relation courtier-client avec les nouvelles informations
+          await createBrokerClientRelation(
+            brokerId,
+            clientId,
+            `${formData.firstName} ${formData.lastName}`,
+            brokerName,
+            Timestamp.now(),
+            formData.email,
+            formData.phone || '',
+            formData.address || '',
+            formData.notes || ''
+          );
         }
+      }
+      
+      onClose();
+      
+      // Appeler la fonction de succès si elle est fournie
+      if (onSuccess) {
+        onSuccess();
       }
     } catch (error) {
       console.error('Erreur lors de la modification du client:', error);
@@ -178,6 +222,18 @@ export default function EditClientModal({ isOpen, onClose, brokerId, brokerName,
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
+            {hasUserAccount && (
+              <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
+                <AlertTriangle className="text-amber-600 h-5 w-5 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm text-amber-800 font-medium">Ce client possède un compte utilisateur</p>
+                  <p className="text-xs text-amber-700 mt-1">
+                    Ce client gère ses propres informations. Seules les notes peuvent être modifiées par vous.
+                  </p>
+                </div>
+              </div>
+            )}
+            
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Prénom *
@@ -188,6 +244,8 @@ export default function EditClientModal({ isOpen, onClose, brokerId, brokerName,
                 value={formData.firstName}
                 onChange={handleChange}
                 className={`w-full p-2 border rounded-md ${errors.firstName ? 'border-red-500' : 'border-gray-300'}`}
+                disabled={hasUserAccount}
+                readOnly={hasUserAccount}
               />
               {errors.firstName && (
                 <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>
@@ -204,6 +262,8 @@ export default function EditClientModal({ isOpen, onClose, brokerId, brokerName,
                 value={formData.lastName}
                 onChange={handleChange}
                 className={`w-full p-2 border rounded-md ${errors.lastName ? 'border-red-500' : 'border-gray-300'}`}
+                disabled={hasUserAccount}
+                readOnly={hasUserAccount}
               />
               {errors.lastName && (
                 <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>
@@ -220,6 +280,8 @@ export default function EditClientModal({ isOpen, onClose, brokerId, brokerName,
                 value={formData.email}
                 onChange={handleChange}
                 className={`w-full p-2 border rounded-md ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
+                disabled={hasUserAccount}
+                readOnly={hasUserAccount}
               />
               {errors.email && (
                 <p className="text-red-500 text-xs mt-1">{errors.email}</p>
@@ -236,6 +298,8 @@ export default function EditClientModal({ isOpen, onClose, brokerId, brokerName,
                 value={formData.phone}
                 onChange={handleChange}
                 className="w-full p-2 border border-gray-300 rounded-md"
+                disabled={hasUserAccount}
+                readOnly={hasUserAccount}
               />
             </div>
             
@@ -249,6 +313,8 @@ export default function EditClientModal({ isOpen, onClose, brokerId, brokerName,
                 value={formData.address}
                 onChange={handleChange}
                 className="w-full p-2 border border-gray-300 rounded-md"
+                disabled={hasUserAccount}
+                readOnly={hasUserAccount}
               />
             </div>
             
@@ -263,6 +329,8 @@ export default function EditClientModal({ isOpen, onClose, brokerId, brokerName,
                   value={formData.city}
                   onChange={handleChange}
                   className="w-full p-2 border border-gray-300 rounded-md"
+                  disabled={hasUserAccount}
+                  readOnly={hasUserAccount}
                 />
               </div>
               <div>
@@ -275,13 +343,15 @@ export default function EditClientModal({ isOpen, onClose, brokerId, brokerName,
                   value={formData.postalCode}
                   onChange={handleChange}
                   className="w-full p-2 border border-gray-300 rounded-md"
+                  disabled={hasUserAccount}
+                  readOnly={hasUserAccount}
                 />
               </div>
             </div>
             
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Notes
+                Notes {hasUserAccount && "(Modifiable)"}
               </label>
               <textarea
                 name="notes"

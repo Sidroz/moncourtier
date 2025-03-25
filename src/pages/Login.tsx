@@ -33,7 +33,7 @@ export default function Login() {
         if (userType === 'client') {
           navigate('/client');
         } else if (userType === 'courtier') {
-          navigate('/courtier/dashboard'); // Changé de "/broker" à "/courtier"
+          navigate('/courtier'); // Changé de "/broker" à "/courtier"
         }
       } else {
         throw new Error(`Cet utilisateur n’est pas enregistré comme ${userType}.`);

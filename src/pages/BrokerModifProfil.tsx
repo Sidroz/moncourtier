@@ -4,7 +4,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db, storage } from '../firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Calendar, Clock, FileText, Settings, LogOut, Users, BarChart as ChartBar, Upload, User } from 'lucide-react';
+import { Calendar, Clock, FileText, Settings, LogOut, Users, BarChart as ChartBar, Upload, User, Building } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -26,7 +26,9 @@ const BrokerModifProfil = () => {
     languesParlees: [] as string[],
     modesAcces: [] as string[],
     moyensPaiement: [] as string[],
-    photoUrl: ''
+    photoUrl: '',
+    firstName: '',
+    lastName: ''
   });
 
   const [newSpecialty, setNewSpecialty] = useState('');
@@ -36,6 +38,9 @@ const BrokerModifProfil = () => {
   const [newModeAcces, setNewModeAcces] = useState('');
   const [newMoyenPaiement, setNewMoyenPaiement] = useState('');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [hasCabinet, setHasCabinet] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   const specialtiesOptions = ['assurance', 'habitation', 'crédit', 'investissement', 'épargne'];
   const languesOptions = ['Français', 'Anglais', 'Espagnol', 'Allemand', 'Italien', 'Arabe', 'Portugais', 'Mandarin'];
@@ -86,8 +91,11 @@ const BrokerModifProfil = () => {
               languesParlees: courtierData.languages || [],
               modesAcces: courtierData.accessMethods || [],
               moyensPaiement: courtierData.paymentMethods || [],
-              photoUrl: courtierData.photoUrl || ''
+              photoUrl: courtierData.photoUrl || '',
+              firstName: courtierData.firstName || '',
+              lastName: courtierData.lastName || ''
             });
+            setHasCabinet(!!courtierData.cabinetId);
           }
         } catch (err) {
           console.error('Erreur lors de la vérification de l\'autorisation:', err);
@@ -147,6 +155,9 @@ const BrokerModifProfil = () => {
     if (!user) return;
 
     setIsSaving(true);
+    setSuccessMessage('');
+    setErrorMessage('');
+
     try {
       const userDocRef = doc(db, 'courtiers', user.uid);
       
@@ -168,13 +179,15 @@ const BrokerModifProfil = () => {
         accessMethods: formData.modesAcces,
         paymentMethods: formData.moyensPaiement,
         photoUrl: formData.photoUrl,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         updatedAt: new Date()
       });
       
-      toast.success('Profil mis à jour avec succès');
+      setSuccessMessage('Profil mis à jour avec succès');
     } catch (err) {
       console.error('Erreur lors de la mise à jour du profil:', err);
-      toast.error('Erreur lors de la sauvegarde des modifications');
+      setErrorMessage('Une erreur est survenue lors de la mise à jour du profil.');
     } finally {
       setIsSaving(false);
     }
@@ -246,7 +259,7 @@ const BrokerModifProfil = () => {
               <Link to="/" className="text-2xl font-bold text-blue-600">MonCourtier</Link>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-gray-700">{user?.email}</span>
+              <span className="text-gray-700">{formData.firstName} {formData.lastName}</span>
               <button className="text-gray-600 hover:text-gray-800">
                 <LogOut className="h-5 w-5" />
               </button>
@@ -255,43 +268,45 @@ const BrokerModifProfil = () => {
         </div>
       </header>
 
-      <div className="w-full pt-16 flex">
+      <div className="w-full pt-20 flex">
         {/* Sidebar */}
-        <div className="w-24 fixed left-0 top-1/2 transform -translate-y-1/2 h-[600px] py-6 ml-[20px] bg-[#244257] rounded-3xl flex flex-col items-center justify-center shadow-lg">
-          <div className="flex flex-col items-center space-y-6">
-            <Link to="/courtier/calendrier" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+        <div className="w-24 fixed left-0 top-1/2 transform -translate-y-1/2 h-[600px] py-6 ml-[20px] bg-[#244257]/90 backdrop-blur-md rounded-3xl flex flex-col items-center justify-center shadow-xl transition-all duration-300 hover:shadow-2xl animate-fadeIn">
+          <div className="flex flex-col items-center space-y-6 animate-slideIn">
+            <Link to="/courtier/calendrier" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <Calendar className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Agenda</span>
             </Link>
-            <Link to="/courtier/clients" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+            <Link to="/courtier/clients" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <Users className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Clients</span>
             </Link>
-            <Link to="/courtier/disponibilites" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+            <Link to="/courtier/disponibilites" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <Clock className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Disponibilités</span>
             </Link>
-            <Link to="/courtier/documents" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
-              <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
-              <FileText className="h-6 w-6 group-hover:scale-110 transition-transform" />
-              <span className="text-xs mt-2 font-medium">Documents</span>
-            </Link>
-            <Link to="/courtier/stats" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+            {hasCabinet && (
+              <Link to="/courtier/cabinet" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
+                <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
+                <Building className="h-6 w-6 group-hover:scale-110 transition-transform" />
+                <span className="text-xs mt-2 font-medium">Cabinet</span>
+              </Link>
+            )}
+            <Link to="/courtier/stats" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <ChartBar className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Statistiques</span>
             </Link>
-            <Link to="/courtier/settings" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+            <Link to="/courtier/settings" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <Settings className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Paramètres</span>
             </Link>
-            <Link to="/courtier/profil" className="flex flex-col items-center text-white group transition-all duration-300 relative">
-              <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
-              <User className="h-6 w-6 group-hover:scale-110 transition-transform" />
+            <Link to="/courtier/profil" className="flex flex-col items-center text-white group transition-all duration-300 relative w-24">
+              <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-100 transition-opacity -z-10"></div>
+              <User className="h-6 w-6 scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Profil</span>
             </Link>
           </div>

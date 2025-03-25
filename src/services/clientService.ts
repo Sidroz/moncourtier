@@ -32,6 +32,7 @@ export interface Client {
   createdAt: Timestamp;
   brokerId?: string;
   type?: string;
+  hasAccount?: boolean;
 }
 
 // Fonction pour obtenir les clients d'un courtier
@@ -47,7 +48,7 @@ export const getBrokerClients = async (
     if (lastDoc) {
       q = query(
         usersRef,
-        where('type', '==', 'client'),
+        where('type', 'in', ['client', 'client_managed']),
         where('brokerId', '==', brokerId),
         orderBy('lastName'),
         startAfter(lastDoc),
@@ -56,7 +57,7 @@ export const getBrokerClients = async (
     } else {
       q = query(
         usersRef,
-        where('type', '==', 'client'),
+        where('type', 'in', ['client', 'client_managed']),
         where('brokerId', '==', brokerId),
         orderBy('lastName'),
         limit(limitCount)
@@ -89,7 +90,7 @@ export const searchClients = async (
     const usersRef = collection(db, 'users');
     const q = query(
       usersRef,
-      where('type', '==', 'client'),
+      where('type', 'in', ['client', 'client_managed']),
       where('brokerId', '==', brokerId)
     );
     
@@ -122,7 +123,7 @@ export const getClientById = async (clientId: string): Promise<Client | null> =>
     const userDocRef = doc(db, 'users', clientId);
     const userDoc = await getDoc(userDocRef);
     
-    if (userDoc.exists() && userDoc.data().type === 'client') {
+    if (userDoc.exists() && (userDoc.data().type === 'client' || userDoc.data().type === 'client_managed')) {
       return {
         id: userDoc.id,
         ...userDoc.data()
@@ -142,7 +143,8 @@ export const addClient = async (clientData: Omit<Client, 'id' | 'createdAt' | 'a
     
     const newClient = {
       ...clientData,
-      type: 'client',
+      type: 'client_managed', // Client géré par le courtier, pas un compte utilisateur
+      hasAccount: false, // Indique que ce client n'a pas de compte utilisateur
       appointmentCount: 0,
       createdAt: Timestamp.now()
     };

@@ -8,7 +8,7 @@ import { auth, db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { Link, useNavigate } from 'react-router-dom';
-import { Calendar, Clock, FileText, Settings, LogOut, Users, BarChart as ChartBar, X, Phone, Mail, AlertCircle, CheckCircle, Clock as ClockIcon, User } from 'lucide-react';
+import { Calendar, Clock, FileText, Settings, LogOut, Users, BarChart as ChartBar, X, Phone, Mail, AlertCircle, CheckCircle, Clock as ClockIcon, User, Building } from 'lucide-react';
 import { getBrokerAppointments } from '../services/appointmentService';
 import './calendar-custom.css';
 
@@ -44,6 +44,7 @@ export default function BrokerCalendar() {
   const [authChecked, setAuthChecked] = useState(false);
   const [userData, setUserData] = useState<{ firstName?: string; lastName?: string; }>({});
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [hasCabinet, setHasCabinet] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -60,6 +61,7 @@ export default function BrokerCalendar() {
               firstName: userDoc.data().firstName || '',
               lastName: userDoc.data().lastName || ''
             });
+            setHasCabinet(!!userDoc.data().cabinetId);
             
             // Récupérer les rendez-vous du courtier
             const today = new Date();
@@ -204,41 +206,43 @@ export default function BrokerCalendar() {
         </div>
       </header>
 
-      <div className="w-full pt-16 flex">
+      <div className="w-full pt-20 flex">
         {/* Sidebar */}
-        <div className="w-24 fixed left-0 top-1/2 transform -translate-y-1/2 h-[600px] py-6 ml-[20px] bg-[#244257] rounded-3xl flex flex-col items-center justify-center shadow-lg">
-          <div className="flex flex-col items-center space-y-6">
-            <Link to="/courtier/calendrier" className="flex flex-col items-center text-white group transition-all duration-300 relative">
-              <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
-              <Calendar className="h-6 w-6 group-hover:scale-110 transition-transform" />
+        <div className="w-24 fixed left-0 top-1/2 transform -translate-y-1/2 h-[600px] py-6 ml-[20px] bg-[#244257]/90 backdrop-blur-md rounded-3xl flex flex-col items-center justify-center shadow-xl transition-all duration-300 hover:shadow-2xl animate-fadeIn">
+          <div className="flex flex-col items-center space-y-6 animate-slideIn">
+            <Link to="/courtier/calendrier" className="flex flex-col items-center text-white group transition-all duration-300 relative w-24">
+              <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-100 transition-opacity -z-10"></div>
+              <Calendar className="h-6 w-6 scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Agenda</span>
             </Link>
-            <Link to="/courtier/clients" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+            <Link to="/courtier/clients" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <Users className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Clients</span>
             </Link>
-            <Link to="/courtier/disponibilites" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+            <Link to="/courtier/disponibilites" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <Clock className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Disponibilités</span>
             </Link>
-            <Link to="/courtier/documents" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
-              <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
-              <FileText className="h-6 w-6 group-hover:scale-110 transition-transform" />
-              <span className="text-xs mt-2 font-medium">Documents</span>
-            </Link>
-            <Link to="/courtier/stats" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+            {hasCabinet && (
+              <Link to="/courtier/cabinet" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
+                <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
+                <Building className="h-6 w-6 group-hover:scale-110 transition-transform" />
+                <span className="text-xs mt-2 font-medium">Cabinet</span>
+              </Link>
+            )}
+            <Link to="/courtier/stats" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <ChartBar className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Statistiques</span>
             </Link>
-            <Link to="/courtier/settings" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+            <Link to="/courtier/settings" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <Settings className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Paramètres</span>
             </Link>
-            <Link to="/courtier/profil" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative">
+            <Link to="/courtier/profil" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <User className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Profil</span>
