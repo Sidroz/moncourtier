@@ -149,7 +149,7 @@ function App() {
               <div className="bg-blue-50 p-2 rounded-xl">
                 <Calendar className="h-8 w-8 text-blue-950" />
               </div>
-              <span className="text-2xl font-extrabold text-blue-950 tracking-tight">MonCourtier</span>
+              <span className="text-2xl font-extrabold text-blue-950 tracking-tight">Courtizy</span>
             </div>
             <div className="flex items-center space-x-8">
               <nav className="hidden md:flex space-x-8">
@@ -404,7 +404,7 @@ function App() {
 
       {/* Advantages Section */}
       <div id="advantages" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-        <h2 className="text-4xl font-bold text-center text-gray-900 mb-6">Pourquoi choisir MonCourtier ?</h2>
+        <h2 className="text-4xl font-bold text-center text-gray-900 mb-6">Pourquoi choisir Courtizy ?</h2>
         <p className="text-center text-gray-600 text-xl mb-16 max-w-3xl mx-auto">
           La plateforme qui simplifie votre mise en relation avec des courtiers professionnels
         </p>
@@ -463,7 +463,7 @@ function App() {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-3 mb-6 md:mb-0">
               <Calendar className="h-8 w-8 text-white" />
-              <span className="text-2xl font-bold">MonCourtier</span>
+              <span className="text-2xl font-bold">Courtizy</span>
             </div>
             <div className="flex flex-wrap gap-5 justify-center">
               <Link to="/pour-les-courtiers" className="text-white hover:text-blue-200 transition-colors">Espace Courtiers</Link>
@@ -474,7 +474,7 @@ function App() {
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-indigo-900 text-center text-blue-200">
-            <p>© {new Date().getFullYear()} MonCourtier. Tous droits réservés.</p>
+            <p>© {new Date().getFullYear()} Courtizy. Tous droits réservés.</p>
           </div>
         </div>
       </footer>

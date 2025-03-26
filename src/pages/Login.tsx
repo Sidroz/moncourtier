@@ -51,7 +51,7 @@ export default function Login() {
           <Calendar className="h-12 w-12 text-blue-600" />
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Connexion à MonCourtier
+          Connexion à Courtizy
         </h2>
       </div>
 

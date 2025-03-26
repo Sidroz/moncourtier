@@ -4,7 +4,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { GoogleMap, Marker, Autocomplete } from '@react-google-maps/api';
 import { User, Calendar } from 'lucide-react';
-import { FaMapPin, FaSquareFacebook, FaLinkedin } from 'react-icons/fa6';
+import { FaMapPin, FaSquareFacebook, FaLinkedin, FaGlobe } from 'react-icons/fa6';
 import { getAvailableSlotsForNext7Days, AvailableSlot } from '../services/appointmentService';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -19,6 +19,9 @@ interface Courtier {
   specialties: string[];
   location: { lat: number; lng: number };
   availableSlots?: AvailableSlot[];
+  website?: string;
+  linkedinUrl?: string;
+  facebookUrl?: string;
 }
 
 const mapContainerStyle = {
@@ -203,7 +206,7 @@ export default function Results() {
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-2">
               <Calendar className="h-8 w-8 text-blue-950" />
-              <Link to="/" className="text-2xl font-bold text-blue-950 hover:text-blue-700 transition-colors">MonCourtier</Link>
+              <Link to="/" className="text-2xl font-bold text-blue-950 hover:text-blue-700 transition-colors">Courtizy</Link>
             </div>
             <div className="flex items-center space-x-8">
               <nav className="hidden md:flex space-x-8">
@@ -320,7 +323,7 @@ export default function Results() {
       </div>
 
       <div className="py-6">
-        <h2 className="text-4xl text-black mb-12 text-center font-roboto">
+        <h2 className="text-4xl text-blue-950 mb-12 text-center font-roboto">
           Courtiers en <span className="font-roboto font-bold">{editedType ? capitalizeFirstLetter(editedType) : 'tous domaines'}</span> disponibles près de <span className="font-roboto font-bold">{location ? extractCity(location) : 'votre position'}</span>
         </h2>
         <div className="max-w-[1920px] mx-auto px-4">
@@ -373,21 +376,43 @@ export default function Results() {
                           <div className="mt-2">
                             <Link 
                               to={`/appointment-booking/${courtier.id}`}
-                              className="block px-4 py-1.5 bg-[#244257] text-white rounded-full text-sm font-medium hover:bg-blue-700 text-center"
+                              className="block px-4 py-1.5 bg-blue-950 text-white rounded-full text-sm font-medium hover:bg-blue-700 text-center"
                             >
                               Prendre RDV
                             </Link>
                           </div>
                           <div className="mt-3 flex justify-center space-x-4">
-                            <FaLinkedin className="h-5 w-5 text-[#244257] hover:text-blue-600 cursor-pointer" />
-                            <FaSquareFacebook className="h-5 w-5 text-[#244257] hover:text-blue-600 cursor-pointer" />
+                            {courtier.website && (
+                              <a href={courtier.website} target="_blank" rel="noopener noreferrer" aria-label="Site web">
+                                <FaGlobe className="h-5 w-5 text-blue-950 hover:text-blue-600 cursor-pointer" />
+                              </a>
+                            )}
+                            {!courtier.website && (
+                              <FaGlobe className="h-5 w-5 text-blue-950 opacity-50 cursor-not-allowed" />
+                            )}
+                            {courtier.linkedinUrl && (
+                              <a href={courtier.linkedinUrl} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                                <FaLinkedin className="h-5 w-5 text-blue-950 hover:text-blue-600 cursor-pointer" />
+                              </a>
+                            )}
+                            {!courtier.linkedinUrl && (
+                              <FaLinkedin className="h-5 w-5 text-blue-950 opacity-50 cursor-not-allowed" />
+                            )}
+                            {courtier.facebookUrl && (
+                              <a href={courtier.facebookUrl} target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                                <FaSquareFacebook className="h-5 w-5 text-blue-950 hover:text-blue-600 cursor-pointer" />
+                              </a>
+                            )}
+                            {!courtier.facebookUrl && (
+                              <FaSquareFacebook className="h-5 w-5 text-blue-950 opacity-50 cursor-not-allowed" />
+                            )}
                           </div>
                         </div>
                       </div>
 
                       <div className="ml-8 flex-1">
                         <div>
-                          <h3 className="text-xl font-semibold text-[#244257]">
+                          <h3 className="text-xl font-semibold text-blue-950">
                             {courtier.firstName} {courtier.lastName}
                           </h3>
                           <div className="flex items-center mt-2">
@@ -398,7 +423,11 @@ export default function Results() {
                             {courtier.specialties.map((specialty) => (
                               <span
                                 key={specialty}
-                                className="inline-flex items-center px-5 py-1.5 rounded-full text-sm font-medium bg-[#244257]/20 text-gray-700"
+                                className={`inline-flex items-center px-5 py-1.5 rounded-full text-sm font-medium ${
+                                  specialty === type 
+                                  ? "bg-blue-950 text-white" 
+                                  : "bg-[#244257]/20 text-gray-700"
+                                }`}
                               >
                                 {capitalizeFirstLetter(specialty)}
                               </span>

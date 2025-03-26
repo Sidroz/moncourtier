@@ -23,6 +23,7 @@ import BrokerStats from './pages/BrokerStats.tsx';
 import ForBrokers from './pages/ForBrokers.tsx';
 import BrokerCabinetManagement from './pages/BrokerCabinetManagement.tsx';
 import BrokerCreateCabinet from './pages/BrokerCreateCabinet.tsx';
+import Pricing from './pages/Pricing.tsx';
 import './index.css';
 
 const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -71,6 +72,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/courtier/profil" element={<BrokerModifProfil />} />
             <Route path="/courtier/stats" element={<BrokerStats />} />
             <Route path="/pour-les-courtiers" element={<ForBrokers />} />
+            <Route path="/pricing" element={<Pricing />} />
           </>
         )}
       </Routes>

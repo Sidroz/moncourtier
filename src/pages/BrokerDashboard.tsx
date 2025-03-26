@@ -246,7 +246,7 @@ export default function BrokerDashboard() {
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-2">
               <Calendar className="h-8 w-8 text-blue-600" />
-              <Link to="/" className="text-2xl font-bold text-blue-600">MonCourtier</Link>
+              <Link to="/" className="text-2xl font-bold text-blue-600">Courtizy</Link>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-gray-700">{userData.firstName} {userData.lastName}</span>

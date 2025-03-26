@@ -125,7 +125,7 @@ export default function ClientSecurity() {
                   <Calendar className="h-6 w-6 text-blue-100" />
                 </div>
                 <Link to="/" className="text-2xl font-bold hover:text-blue-100 transition-colors">
-                  MonCourtier
+                  Courtizy
                 </Link>
               </div>
               
