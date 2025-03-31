@@ -24,6 +24,7 @@ import ForBrokers from './pages/ForBrokers.tsx';
 import BrokerCabinetManagement from './pages/BrokerCabinetManagement.tsx';
 import BrokerCreateCabinet from './pages/BrokerCreateCabinet.tsx';
 import Pricing from './pages/Pricing.tsx';
+import BrokerSettings from './pages/BrokerSettings.tsx';
 import './index.css';
 
 const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -33,7 +34,7 @@ if (!googleMapsApiKey) {
 }
 
 // Vérifier si nous sommes sur le sous-domaine pro
-const isPro = window.location.hostname === 'pro.localhost' || window.location.hostname === 'pro.moncourtier.fr';
+const isPro = window.location.hostname === 'pro.localhost' || window.location.hostname === 'pro.courtizy.fr';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -73,6 +74,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/courtier/stats" element={<BrokerStats />} />
             <Route path="/pour-les-courtiers" element={<ForBrokers />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/courtier/settings" element={<BrokerSettings />} />
           </>
         )}
       </Routes>

@@ -29,6 +29,7 @@ export default function BrokerSignup() {
   const [firmAddress, setFirmAddress] = useState('');
   const [specialties, setSpecialties] = useState<string[]>([]);
   const [website, setWebsite] = useState('');
+  const [orias, setorias] = useState('');
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -113,6 +114,7 @@ export default function BrokerSignup() {
         phone,
         firmName,
         firmAddress,
+        orias,
         specialties,
         website: website || null,
         type: 'courtier',
@@ -363,7 +365,7 @@ export default function BrokerSignup() {
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       className={`${inputClasses}`}
-                      placeholder="+33 6 12 34 56 78"
+                      placeholder="06 12 34 56 78"
                     />
                   </div>
                 </div>
@@ -479,6 +481,33 @@ export default function BrokerSignup() {
                   <p className="mt-1 text-xs text-gray-500">
                     Sélectionnez une adresse dans la liste pour validation
                   </p>
+                </div>
+                
+                <div>
+                  <label htmlFor="orias" className="block text-sm font-medium text-gray-700 mb-1">
+                    Numéro ORIAS
+                  </label>
+                  <div className="relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Building2 className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      id="orias"
+                      name="orias"
+                      type="text"
+                      required
+                      value={orias}
+                      onChange={(e) => {
+                        // Ne permet que les chiffres
+                        const value = e.target.value;
+                        if (value === '' || /^\d+$/.test(value)) {
+                          setorias(value);
+                        }
+                      }}
+                      className={`${inputClasses}`}
+                      placeholder="Entrez votre numéro ORIAS"
+                    />
+                  </div>
                 </div>
                 
                 <div>

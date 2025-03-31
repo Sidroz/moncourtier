@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar as BigCalendar, momentLocalizer, SlotInfo, Components } from 'react-big-calendar';
+import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'moment/locale/fr';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -7,8 +7,8 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
-import { Link, useNavigate } from 'react-router-dom';
-import { Calendar, Clock, FileText, Settings, LogOut, Users, BarChart as ChartBar, X, Phone, Mail, AlertCircle, CheckCircle, Clock as ClockIcon, User, Building } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Calendar, Settings, LogOut, User, Clock, Building, X, CheckCircle, AlertCircle, Mail, Phone } from 'lucide-react';
 import { getBrokerAppointments } from '../services/appointmentService';
 import './calendar-custom.css';
 
@@ -45,7 +45,6 @@ export default function BrokerCalendar() {
   const [userData, setUserData] = useState<{ firstName?: string; lastName?: string; }>({});
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [hasCabinet, setHasCabinet] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (!loadingAuth && user) {
@@ -164,15 +163,6 @@ export default function BrokerCalendar() {
     setSelectedEvent(event);
   };
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      // Redirection vers la page d'accueil sera gérée par les hooks d'authentification
-    } catch (error) {
-      console.error('Erreur lors de la déconnexion:', error);
-    }
-  };
-
   if (loading || !authChecked) {
     return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
   }
@@ -188,25 +178,45 @@ export default function BrokerCalendar() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-10">
-        <div className="max-w-[95%] mx-auto px-4 py-3 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <Calendar className="h-8 w-8 text-blue-600" />
-              <Link to="/" className="text-2xl font-bold text-blue-600">MonCourtier</Link>
+      {/* Header amélioré */}
+      <header className="bg-white shadow-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center">
+              <Calendar className="h-6 w-6 text-blue-600" />
+              <h1 className="ml-2 text-2xl font-semibold text-gray-900">
+                Agenda
+              </h1>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-gray-700">{userData.firstName} {userData.lastName}</span>
-              <button onClick={handleLogout} className="text-gray-600 hover:text-gray-800">
-                <LogOut className="h-5 w-5" />
-              </button>
+              <div className="flex items-center bg-gray-100 rounded-full px-4 py-2">
+                <User className="h-5 w-5 text-gray-600" />
+                <span className="ml-2 text-sm font-medium text-gray-700">
+                  {userData.firstName} {userData.lastName}
+                </span>
+              </div>
+              <div className="flex space-x-2">
+                <Link
+                  to="/broker/settings"
+                  className="p-2 text-gray-600 hover:text-blue-600 rounded-full hover:bg-gray-100"
+                  title="Paramètres"
+                >
+                  <Settings className="h-5 w-5" />
+                </Link>
+                <button
+                  onClick={() => signOut(auth)}
+                  className="p-2 text-gray-600 hover:text-blue-600 rounded-full hover:bg-gray-100"
+                  title="Déconnexion"
+                >
+                  <LogOut className="h-5 w-5" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="w-full pt-20 flex">
+      <div className="w-full pt-4 flex">
         {/* Sidebar */}
         <div className="w-24 fixed left-0 top-1/2 transform -translate-y-1/2 h-[600px] py-6 ml-[20px] bg-[#244257]/90 backdrop-blur-md rounded-3xl flex flex-col items-center justify-center shadow-xl transition-all duration-300 hover:shadow-2xl animate-fadeIn">
           <div className="flex flex-col items-center space-y-6 animate-slideIn">
@@ -217,7 +227,7 @@ export default function BrokerCalendar() {
             </Link>
             <Link to="/courtier/clients" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
-              <Users className="h-6 w-6 group-hover:scale-110 transition-transform" />
+              <User className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Clients</span>
             </Link>
             <Link to="/courtier/disponibilites" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
@@ -234,7 +244,7 @@ export default function BrokerCalendar() {
             )}
             <Link to="/courtier/stats" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
-              <ChartBar className="h-6 w-6 group-hover:scale-110 transition-transform" />
+              <Calendar className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Statistiques</span>
             </Link>
             <Link to="/courtier/settings" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
@@ -339,7 +349,7 @@ export default function BrokerCalendar() {
                   {selectedEvent.status === 'confirmed' ? (
                     <CheckCircle className="h-5 w-5 text-green-600" />
                   ) : selectedEvent.status === 'pending' ? (
-                    <ClockIcon className="h-5 w-5 text-yellow-600" />
+                    <Clock className="h-5 w-5 text-yellow-600" />
                   ) : (
                     <AlertCircle className="h-5 w-5 text-red-600" />
                   )}
@@ -382,9 +392,13 @@ export default function BrokerCalendar() {
                       <span className="font-medium">Date : </span>
                       {moment(selectedEvent.start).format('dddd D MMMM YYYY')}
                     </div>
-                    <div>
-                      <span className="font-medium">Heure : </span>
-                      {moment(selectedEvent.start).format('HH:mm')} - {moment(selectedEvent.end).format('HH:mm')}
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Clock className="h-5 w-5 text-gray-500" />
+                        <span className="text-sm text-gray-700">
+                          {moment(selectedEvent.start).format('HH:mm')} - {moment(selectedEvent.end).format('HH:mm')}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>

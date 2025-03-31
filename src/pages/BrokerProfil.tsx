@@ -43,6 +43,8 @@ interface Courtier {
   certifications?: string[];
   services?: string[];
   accessMethods?: string[];
+  linkedinUrl?: string;
+  facebookUrl?: string;
 }
 
 const BrokerProfil: React.FC = () => {
@@ -92,8 +94,8 @@ const BrokerProfil: React.FC = () => {
     const slotsByDay: Record<string, AvailableSlot[]> = {};
     
     slots.forEach(slot => {
-      // Vérifier que le créneau est valide
-      if (slot && slot.date) {
+      // Vérifier que le créneau est valide et n'est pas un jour vide
+      if (slot && slot.date && !slot.isEmpty) {
         const day = slot.date;
         if (!slotsByDay[day]) {
           slotsByDay[day] = [];
@@ -230,12 +232,29 @@ const BrokerProfil: React.FC = () => {
                   </div>
                   
                   <div className="mt-4 flex justify-center md:justify-start space-x-4">
-                    <FaLinkedin className="h-6 w-6 text-[#0077B5] hover:opacity-80 cursor-pointer" />
-                    <FaSquareFacebook className="h-6 w-6 text-[#1877F2] hover:opacity-80 cursor-pointer" />
-                    {courtier.website && (
-                      <a href={courtier.website} target="_blank" rel="noopener noreferrer">
-                        <Globe className="h-6 w-6 text-gray-700 hover:text-gray-900" />
+                    {courtier.linkedinUrl && (
+                      <a href={courtier.linkedinUrl} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                        <FaLinkedin className="h-6 w-6 text-[#0077B5] hover:opacity-80 cursor-pointer" />
                       </a>
+                    )}
+                    {!courtier.linkedinUrl && (
+                      <FaLinkedin className="h-6 w-6 text-[#0077B5] opacity-50 cursor-not-allowed" />
+                    )}
+                    {courtier.facebookUrl && (
+                      <a href={courtier.facebookUrl} target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                        <FaSquareFacebook className="h-6 w-6 text-[#1877F2] hover:opacity-80 cursor-pointer" />
+                      </a>
+                    )}
+                    {!courtier.facebookUrl && (
+                      <FaSquareFacebook className="h-6 w-6 text-[#1877F2] opacity-50 cursor-not-allowed" />
+                    )}
+                    {courtier.website && (
+                      <a href={courtier.website} target="_blank" rel="noopener noreferrer" aria-label="Site web">
+                        <Globe className="h-6 w-6 text-gray-700 hover:text-gray-900 cursor-pointer" />
+                      </a>
+                    )}
+                    {!courtier.website && (
+                      <Globe className="h-6 w-6 text-gray-700 opacity-50 cursor-not-allowed" />
                     )}
                   </div>
                 </div>

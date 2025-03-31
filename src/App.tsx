@@ -171,7 +171,7 @@ function App() {
       </header>
 
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-blue-950 to-indigo-950 pt-32 pb-24 relative overflow-hidden">
+      <div className="bg-gradient-to-r from-blue-950 to-indigo-950 pt-48 pb-20 relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQ0MCIgaGVpZ2h0PSI3NjUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj48cmVjdCBmaWxsPSIjMTcyNTU0IiB3aWR0aD0iMTQ0MCIgaGVpZ2h0PSI3NjUiLz48Y2lyY2xlIHN0cm9rZT0iIzFBMzI2OCIgc3Ryb2tlLXdpZHRoPSIyIiBjeD0iNzAyLjUiIGN5PSIzNzQuNSIgcj0iMTc4LjUiLz48Y2lyY2xlIHN0cm9rZT0iIzFBMzI2OCIgc3Ryb2tlLXdpZHRoPSIyIiBjeD0iNTI1IiBjeT0iNDk3IiByPSIxMTkiLz48Y2lyY2xlIHN0cm9rZT0iIzFBMzI2OCIgc3Ryb2tlLXdpZHRoPSIyIiBjeD0iOTAyLjUiIGN5PSIyNTcuNSIgcj0iODMuNSIvPjxjaXJjbGUgc3Ryb2tlPSIjMUEzMjY4IiBzdHJva2Utd2lkdGg9IjIiIGN4PSI3MDYuNSIgY3k9IjMxNC41IiByPSIzMS41Ii8+PGNpcmNsZSBzdHJva2U9IiMxQTMyNjgiIHN0cm9rZS13aWR0aD0iMiIgY3g9IjYwMi41IiBjeT0iNDY1LjUiIHI9IjQxLjUiLz48Y2lyY2xlIHN0cm9rZT0iIzFBMzI2OCIgc3Ryb2tlLXdpZHRoPSIyIiBjeD0iODY3IiBjeT0iMzQzIiByPSIzMSIvPjwvZz48L3N2Zz4=')] opacity-30 mix-blend-overlay"></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-16">
@@ -231,7 +231,7 @@ function App() {
       </div>
 
       {/* Services Section */}
-      <div id="services" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+      <div id="services" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <h2 className="text-4xl font-bold text-center text-gray-900 mb-6">Domaines de nos courtiers partenaires</h2>
         <p className="text-center text-gray-600 text-xl mb-16 max-w-3xl mx-auto">
           Trouvez le courtier spécialisé qui correspond à vos besoins parmi notre réseau de professionnels qualifiés

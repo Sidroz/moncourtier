@@ -82,18 +82,20 @@ export default function AppointmentBooking() {
 
       try {
         // Récupérer les informations du client
-        const userDoc = await getDoc(doc(db, 'clients', user.uid));
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
           const data = userDoc.data();
+          console.log("Données client récupérées:", data);
           setUserData(prevData => ({
             ...prevData,
-            firstName: data.firstName || prevData.firstName,
-            lastName: data.lastName || prevData.lastName,
-            email: user.email || prevData.email,
-            phone: data.phone || prevData.phone
+            firstName: data.firstName || '',
+            lastName: data.lastName || '',
+            email: user.email || '',
+            phone: data.phone || ''
           }));
         } else {
           // Si le document n'existe pas, on garde juste l'email de l'authentification
+          console.log("Document client non trouvé pour l'utilisateur:", user.uid);
           setUserData(prevData => ({
             ...prevData,
             email: user.email || ''
@@ -452,9 +454,9 @@ export default function AppointmentBooking() {
                         id="firstName"
                         name="firstName"
                         value={userData.firstName}
-                        onChange={(e) => setUserData({ ...userData, firstName: e.target.value })}
+                        readOnly
                         placeholder="Votre prénom"
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 cursor-not-allowed"
                         required
                       />
                     </div>
@@ -468,9 +470,9 @@ export default function AppointmentBooking() {
                         id="lastName"
                         name="lastName"
                         value={userData.lastName}
-                        onChange={(e) => setUserData({ ...userData, lastName: e.target.value })}
+                        readOnly
                         placeholder="Votre nom"
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 cursor-not-allowed"
                         required
                       />
                     </div>
