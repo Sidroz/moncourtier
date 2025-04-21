@@ -16,12 +16,14 @@ import {
   ThumbsUp, 
   Star,
   FileText,
-  ArrowLeft
+  ArrowLeft,
+  Lock
 } from 'lucide-react';
 import { FaLinkedin, FaSquareFacebook, FaLocationDot, FaMoneyBill } from 'react-icons/fa6';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { getAvailableSlotsForNext7Days, AvailableSlot } from '../services/appointmentService';
+import { getBrokerSubscription } from '../services/subscriptionService';
 
 interface Courtier {
   id: string;
@@ -45,6 +47,7 @@ interface Courtier {
   accessMethods?: string[];
   linkedinUrl?: string;
   facebookUrl?: string;
+  subscription?: { planId: string };
 }
 
 const BrokerProfil: React.FC = () => {
@@ -71,6 +74,10 @@ const BrokerProfil: React.FC = () => {
             id: courtierDoc.id,
             ...courtierDoc.data(),
           } as Courtier;
+
+          // Récupérer l'abonnement
+          const subscription = await getBrokerSubscription(brokerId);
+          courtierData.subscription = subscription;
           
           // Récupérer les créneaux disponibles
           const slots = await getAvailableSlotsForNext7Days(brokerId);
@@ -223,12 +230,22 @@ const BrokerProfil: React.FC = () => {
                   </div>
                   
                   <div className="mt-6">
-                    <Link 
-                      to={`/appointment-booking/${courtier.id}`}
-                      className="inline-block w-full px-4 py-3 bg-blue-950 text-white rounded-md hover:bg-blue-800 text-center font-medium transition-colors"
-                    >
-                      Prendre rendez-vous
-                    </Link>
+                    {courtier.subscription && (courtier.subscription.planId === 'pro' || courtier.subscription.planId === 'starter') ? (
+                      <Link
+                        to={`/appointment-booking/${courtier.id}`}
+                        className="inline-block w-full px-4 py-3 bg-blue-950 text-white rounded-md hover:bg-blue-800 text-center font-medium transition-colors"
+                      >
+                        Prendre rendez-vous
+                      </Link>
+                    ) : (
+                      <button
+                        disabled
+                        className="w-full px-6 py-3 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed text-center font-medium flex items-center justify-center"
+                      >
+                        <Lock className="h-4 w-4 mr-2" />
+                        Prendre rendez-vous
+                      </button>
+                    )}
                   </div>
                   
                   <div className="mt-4 flex justify-center md:justify-start space-x-4">
@@ -373,66 +390,78 @@ const BrokerProfil: React.FC = () => {
                     <div>
                       <h3 className="text-lg font-medium text-gray-900 mb-3">Prochaines disponibilités</h3>
                       
-                      {!courtier.availableSlots || courtier.availableSlots.length === 0 ? (
+                      {courtier.subscription && (courtier.subscription.planId === 'pro' || courtier.subscription.planId === 'starter') ? (
+                        !courtier.availableSlots || courtier.availableSlots.length === 0 ? (
+                          <div className="bg-gray-50 rounded-lg p-6 text-center">
+                            <Calendar className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+                            <p className="text-gray-600">
+                              Aucune disponibilité pour le moment.
+                            </p>
+                            <p className="mt-2 text-gray-500">
+                              Veuillez vérifier ultérieurement.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            {Object.entries(getSlotsByDay(courtier.availableSlots))
+                              .filter(([_, slots]) => slots.length > 0)
+                              .slice(0, availabilityExpanded ? undefined : 3)
+                              .map(([date, slots]) => (
+                                <div key={date} className="bg-white border rounded-lg overflow-hidden">
+                                  <div className="bg-gray-50 px-4 py-3 border-b">
+                                    <div className="font-medium text-gray-900">
+                                      {formatDay(date)}
+                                    </div>
+                                  </div>
+                                  <div className="p-4">
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                                      {slots.map((slot, idx) => (
+                                        <Link
+                                          key={idx}
+                                          to={`/appointment-booking/${courtier.id}?date=${slot.date}&time=${slot.startTime}`}
+                                          className="text-center py-2 px-3 bg-blue-50 text-blue-800 hover:bg-blue-100 rounded-md transition-colors"
+                                        >
+                                          {slot.startTime}
+                                        </Link>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                              
+                            {courtier.availableSlots.length > 0 && (
+                              <div className="text-center mt-4">
+                                <Link 
+                                  to={`/appointment-booking/${courtier.id}`}
+                                  className="inline-flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors font-medium"
+                                >
+                                  <Calendar className="h-4 w-4 mr-2" />
+                                  Voir toutes les disponibilités
+                                </Link>
+                              </div>
+                            )}
+                            
+                            <div className="bg-blue-50 rounded-lg p-4 mt-6 flex items-start">
+                              <div className="flex-shrink-0 mr-4">
+                                <Clock className="h-5 w-5 text-blue-600" />
+                              </div>
+                              <div>
+                                <p className="text-sm text-blue-800">
+                                  Les rendez-vous sont d'une durée de 45 minutes. Vous recevrez une confirmation par email après votre réservation.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      ) : (
                         <div className="bg-gray-50 rounded-lg p-6 text-center">
-                          <Calendar className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+                          <Lock className="h-10 w-10 text-gray-400 mx-auto mb-3" />
                           <p className="text-gray-600">
                             Ce courtier ne propose pas la prise de rendez-vous en ligne.
                           </p>
                           <p className="mt-2 text-gray-500">
                             Veuillez le contacter directement pour fixer un rendez-vous.
                           </p>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          {Object.entries(getSlotsByDay(courtier.availableSlots))
-                            .filter(([_, slots]) => slots.length > 0) // Filtrer les jours sans créneaux
-                            .slice(0, availabilityExpanded ? undefined : 3)
-                            .map(([date, slots]) => (
-                              <div key={date} className="bg-white border rounded-lg overflow-hidden">
-                                <div className="bg-gray-50 px-4 py-3 border-b">
-                                  <div className="font-medium text-gray-900">
-                                    {formatDay(date)}
-                                  </div>
-                                </div>
-                                <div className="p-4">
-                                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-                                    {slots.map((slot, idx) => (
-                                      <Link
-                                        key={idx}
-                                        to={`/appointment-booking/${courtier.id}?date=${slot.date}&time=${slot.startTime}`}
-                                        className="text-center py-2 px-3 bg-blue-50 text-blue-800 hover:bg-blue-100 rounded-md transition-colors"
-                                      >
-                                        {slot.startTime}
-                                      </Link>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                            
-                          {courtier.availableSlots.length > 0 && (
-                            <div className="text-center mt-4">
-                              <Link 
-                                to={`/appointment-booking/${courtier.id}`}
-                                className="inline-flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors font-medium"
-                              >
-                                <Calendar className="h-4 w-4 mr-2" />
-                                Voir toutes les disponibilités
-                              </Link>
-                            </div>
-                          )}
-                          
-                          <div className="bg-blue-50 rounded-lg p-4 mt-6 flex items-start">
-                            <div className="flex-shrink-0 mr-4">
-                              <Clock className="h-5 w-5 text-blue-600" />
-                            </div>
-                            <div>
-                              <p className="text-sm text-blue-800">
-                                Les rendez-vous sont d'une durée de 45 minutes. Vous recevrez une confirmation par email après votre réservation.
-                              </p>
-                            </div>
-                          </div>
                         </div>
                       )}
                     </div>
@@ -497,12 +526,22 @@ const BrokerProfil: React.FC = () => {
                         <p className="text-gray-600 mb-4">
                           La façon la plus simple de rencontrer {courtier.firstName} est de réserver un créneau en ligne.
                         </p>
-                        <Link 
-                          to={`/appointment-booking/${courtier.id}`}
-                          className="inline-block w-full px-4 py-2 bg-blue-950 text-white rounded-md hover:bg-blue-800 text-center font-medium transition-colors"
-                        >
-                          Prendre rendez-vous
-                        </Link>
+                        {courtier.subscription && (courtier.subscription.planId === 'pro' || courtier.subscription.planId === 'starter') ? (
+                          <Link 
+                            to={`/appointment-booking/${courtier.id}`}
+                            className="inline-block w-full px-4 py-2 bg-blue-950 text-white rounded-md hover:bg-blue-800 text-center font-medium transition-colors"
+                          >
+                            Prendre rendez-vous
+                          </Link>
+                        ) : (
+                          <button
+                            disabled
+                            className="w-full px-4 py-2 bg-gray-300 text-gray-500 rounded-md cursor-not-allowed text-center font-medium flex items-center justify-center"
+                          >
+                            <Lock className="h-4 w-4 mr-2" />
+                            Prendre rendez-vous
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}

@@ -13,6 +13,7 @@ import { getClientById } from '../services/clientService';
 export default function BrokerClients() {
   const [user, loading, error] = useAuthState(auth);
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [userData, setUserData] = useState<{ firstName?: string; lastName?: string; photoURL?: string; }>({});
   const [authChecked, setAuthChecked] = useState(false);
   const [relations, setRelations] = useState<BrokerClientRelation[]>([]);
   const [filteredRelations, setFilteredRelations] = useState<BrokerClientRelation[]>([]);
@@ -42,6 +43,11 @@ export default function BrokerClients() {
             setBrokerName(userDoc.data().displayName || '');
             setHasCabinet(!!userDoc.data().cabinetId);
             loadRelations();
+            setUserData({
+              firstName: userDoc.data().firstName || '',
+              lastName: userDoc.data().lastName || '',
+              photoURL: userDoc.data().photoURL || '',
+            });
           }
         } catch (err) {
           console.error('Erreur lors de la vérification de l\'autorisation:', err);
@@ -196,19 +202,18 @@ export default function BrokerClients() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md shadow-sm fixed top-0 left-0 right-0 z-10">
-        <div className="max-w-[95%] mx-auto px-4 py-4 sm:px-6 lg:px-8">
+      <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-10">
+        <div className="max-w-[95%] mx-auto px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-3">
-              <Calendar className="h-8 w-8 text-blue-600 transform transition-transform hover:scale-110" />
-              <Link to="/" className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent hover:opacity-90 transition-opacity">MonCourtier</Link>
+              <Link to="/" className="bg-blue-50 p-2 rounded-xl">
+                <img src="https://courtizy.fr/logo.png" alt="Logo" style={{ width: '32px', height: '32px', backgroundColor: 'transparent' }} />
+              </Link>
+              <Link to="/" className="text-2xl font-extrabold text-blue-950 tracking-tight">Courtizy</Link>
             </div>
-            <div className="flex items-center space-x-6">
-              <span className="text-gray-700 font-medium">{user?.displayName || user?.email}</span>
-              <button 
-                onClick={() => auth.signOut()}
-                className="text-gray-600 hover:text-red-600 transition-colors duration-200 p-2 rounded-full hover:bg-gray-100"
-              >
+            <div className="flex items-center space-x-4">
+              <span className="text-gray-700">{userData.firstName} {userData.lastName}</span>
+              <button className="text-gray-600 hover:text-gray-800">
                 <LogOut className="h-5 w-5" />
               </button>
             </div>

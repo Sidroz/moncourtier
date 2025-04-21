@@ -120,10 +120,10 @@ export default function ClientSecurity() {
           {/* Logo et navigation principale */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex items-center space-x-2 py-2">
-                <div className="bg-white/10 p-1.5 rounded-lg">
-                  <Calendar className="h-6 w-6 text-blue-100" />
-                </div>
+            <div className="flex items-center space-x-2 py-2">
+                <Link to="/" className="bg-white p-1.5 rounded-lg">
+                <img src="https://courtizy.fr/logo.png" alt="Logo" style={{ width: '32px', height: '32px', backgroundColor: 'transparent' }} />
+                </Link>
                 <Link to="/" className="text-2xl font-bold hover:text-blue-100 transition-colors">
                   Courtizy
                 </Link>
@@ -163,7 +163,7 @@ export default function ClientSecurity() {
                 <Link 
                   to="/client/settings" 
                   className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
-                    location.pathname.includes('/client/settings') || location.pathname.includes('/client/security')
+                    location.pathname.includes('/client/settings') || location.pathname.includes('/client/securite')
                       ? 'bg-white/10 text-white' 
                       : 'text-gray-100 hover:bg-white/5'
                   }`}

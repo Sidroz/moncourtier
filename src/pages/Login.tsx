@@ -48,9 +48,9 @@ export default function Login() {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <Calendar className="h-12 w-12 text-blue-600" />
+          <img src="https://courtizy.fr/logo.png" alt="Logo" style={{ width: '64px', height: '64px', backgroundColor: 'transparent' }} />
         </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-blue-950">
           Connexion à Courtizy
         </h2>
       </div>
@@ -73,7 +73,7 @@ export default function Login() {
             <button
               className={`flex-1 py-2 px-4 rounded-lg flex items-center justify-center space-x-2 ${
                 userType === 'courtier'
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-blue-950 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
               onClick={() => setUserType('courtier')}

@@ -281,10 +281,10 @@ export default function ClientAppointments() {
           {/* Logo et navigation principale */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex items-center space-x-2 py-2">
-                <div className="bg-white/10 p-1.5 rounded-lg">
-                  <Calendar className="h-6 w-6 text-blue-100" />
-                </div>
+            <div className="flex items-center space-x-2 py-2">
+                <Link to="/" className="bg-white p-1.5 rounded-lg">
+                <img src="https://courtizy.fr/logo.png" alt="Logo" style={{ width: '32px', height: '32px', backgroundColor: 'transparent' }} />
+                </Link>
                 <Link to="/" className="text-2xl font-bold hover:text-blue-100 transition-colors">
                   Courtizy
                 </Link>

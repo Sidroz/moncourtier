@@ -3,12 +3,13 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { GoogleMap, Marker, Autocomplete } from '@react-google-maps/api';
-import { User, Calendar } from 'lucide-react';
+import { User, Calendar, Lock } from 'lucide-react';
 import { FaMapPin, FaSquareFacebook, FaLinkedin, FaGlobe } from 'react-icons/fa6';
 import { getAvailableSlotsForNext7Days, AvailableSlot } from '../services/appointmentService';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useAuthState } from 'react-firebase-hooks/auth';
+import { getBrokerSubscription, hasFeature } from '../services/subscriptionService';
 
 interface Courtier {
   id: string;
@@ -22,6 +23,7 @@ interface Courtier {
   website?: string;
   linkedinUrl?: string;
   facebookUrl?: string;
+  subscription?: any;
 }
 
 const mapContainerStyle = {
@@ -146,10 +148,14 @@ export default function Results() {
 
         const courtiersWithSlots = await Promise.all(
           filteredCourtiers.map(async (courtier) => {
-            const availableSlots = await getAvailableSlotsForNext7Days(courtier.id);
+            const subscription = await getBrokerSubscription(courtier.id);
+            const availableSlots = hasFeature(subscription, 'appointmentBooking') 
+              ? await getAvailableSlotsForNext7Days(courtier.id)
+              : [];
             return {
               ...courtier,
-              availableSlots
+              availableSlots,
+              subscription
             };
           })
         );
@@ -204,10 +210,10 @@ export default function Results() {
       <header className="bg-white shadow-sm w-3/5 z-10 rounded-md mx-auto mb-6">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <Calendar className="h-8 w-8 text-blue-950" />
-              <Link to="/" className="text-2xl font-bold text-blue-950 hover:text-blue-700 transition-colors">Courtizy</Link>
-            </div>
+            <Link to="/" className="flex items-center space-x-2">
+            <img src="https://courtizy.fr/logo.png" alt="Logo" style={{ width: '32px', height: '32px', backgroundColor: 'transparent' }} />
+            <span className="text-2xl font-bold text-blue-950 transition-colors">Courtizy</span>
+            </Link>
             <div className="flex items-center space-x-8">
               <nav className="hidden md:flex space-x-8">
                 <a href="#how-it-works" className="text-gray-700 hover:text-blue-600">Comment ça marche</a>
@@ -241,8 +247,11 @@ export default function Results() {
                     <option value="">Tous</option>
                     <option value="immobilier">Immobilier</option>
                     <option value="assurance">Assurance</option>
-                    <option value="expertise">Expertise</option>
-                    <option value="finance">Finance</option>
+                    <option value="credit">Crédit</option>
+                    <option value="retraite">Retraite</option>
+                    <option value="fiscalite">Fiscalité</option>
+                    <option value="recrutement">Recrutement</option>
+                    <option value="travaux">Travaux</option>
                   </select>
                 ) : (
                   <span className="text-sm font-semibold text-blue-950 bg-blue-50 px-3 py-1 rounded-full">
@@ -374,12 +383,24 @@ export default function Results() {
                             </Link>
                           </div>
                           <div className="mt-2">
-                            <Link 
-                              to={`/appointment-booking/${courtier.id}`}
-                              className="block px-4 py-1.5 bg-blue-950 text-white rounded-full text-sm font-medium hover:bg-blue-700 text-center"
-                            >
-                              Prendre RDV
-                            </Link>
+                            {courtier.subscription && (courtier.subscription.planId === 'pro' || courtier.subscription.planId === 'starter') ? (
+                              <Link
+                                to={`/appointment-booking/${courtier.id}`}
+                                className="block px-4 py-1.5 bg-blue-950 text-white rounded-full text-sm font-medium hover:bg-blue-700 text-center"
+                              >
+                                Prendre RDV
+                              </Link>
+                            ) : (
+                              <button
+                                disabled
+                                className="block px-4 py-1.5 bg-gray-300 text-gray-500 rounded-full text-sm font-medium cursor-not-allowed text-center w-full"
+                              >
+                                <div className="flex items-center justify-center">
+                                  <Lock className="h-4 w-4 mr-2" />
+                                  Prendre RDV
+                                </div>
+                              </button>
+                            )}
                           </div>
                           <div className="mt-3 flex justify-center space-x-4">
                             {courtier.website && (

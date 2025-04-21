@@ -4,7 +4,7 @@ import { auth, db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { Link } from 'react-router-dom';
-import { Calendar, Clock, FileText, Settings, LogOut, Users, BarChart, Building, Plus, Trash2, User, ChevronDown, ChevronUp } from 'lucide-react';
+import { Calendar, Clock, FileText, Settings, LogOut, Users, BarChart, Building, Plus, Trash2, User, ChevronDown, ChevronUp, Lock } from 'lucide-react';
 import { 
   TimeSlot, 
   DayAvailability, 
@@ -16,6 +16,8 @@ import {
   updateBrokerAvailabilityByAdmin
 } from '../services/availabilityService';
 import { getCabinetByBrokerId } from '../services/cabinetService';
+import { getBrokerSubscription, hasFeature } from '../services/subscriptionService';
+import { BrokerSubscription } from '../types/subscription';
 
 const defaultTimeSlot: TimeSlot = { start: "08:00", end: "17:00" };
 
@@ -65,6 +67,7 @@ export default function BrokerAvailability() {
   }[]>([]);
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
   const [showTeamAvailabilities, setShowTeamAvailabilities] = useState(false);
+  const [subscription, setSubscription] = useState<BrokerSubscription | null>(null);
 
   useEffect(() => {
     if (!loadingAuth && user) {
@@ -110,6 +113,17 @@ export default function BrokerAvailability() {
       checkAuthorization();
     }
   }, [user, loadingAuth]);
+  
+  useEffect(() => {
+    const loadSubscription = async () => {
+      if (user) {
+        const brokerSubscription = await getBrokerSubscription(user.uid);
+        setSubscription(brokerSubscription);
+      }
+    };
+
+    loadSubscription();
+  }, [user]);
   
   // Gestion des disponibilités de l'utilisateur courant
   const handleDayToggle = (day: keyof WeeklyAvailability) => {
@@ -235,18 +249,20 @@ export default function BrokerAvailability() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen bg-gray-50 ${subscription && !hasFeature(subscription, 'appointmentBooking') ? 'overflow-hidden h-screen' : ''}`}>
       {/* Header */}
       <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-10">
         <div className="max-w-[95%] mx-auto px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <Calendar className="h-8 w-8 text-blue-600" />
-              <Link to="/" className="text-2xl font-bold text-blue-600">MonCourtier</Link>
+            <div className="flex items-center space-x-3">
+              <Link to="/" className="bg-blue-50 p-2 rounded-xl">
+                <img src="https://courtizy.fr/logo.png" alt="Logo" style={{ width: '32px', height: '32px', backgroundColor: 'transparent' }} />
+              </Link>
+              <Link to="/" className="text-2xl font-extrabold text-blue-950 tracking-tight">Courtizy</Link>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-gray-700">{userData.firstName} {userData.lastName}</span>
-              <button onClick={handleLogout} className="text-gray-600 hover:text-gray-800">
+              <button className="text-gray-600 hover:text-gray-800">
                 <LogOut className="h-5 w-5" />
               </button>
             </div>
@@ -299,7 +315,7 @@ export default function BrokerAvailability() {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 ml-[140px] mr-[20px]">
+        <div className="flex-1 ml-[140px] mt-[0px] mr-[20px]">
           <div className="bg-white rounded-lg shadow p-4 my-6">
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-xl font-semibold">
@@ -445,6 +461,48 @@ export default function BrokerAvailability() {
           </div>
         </div>
       </div>
+
+      {subscription && !hasFeature(subscription, 'appointmentBooking') && (
+        <>
+          <div className="fixed z-25" style={{ 
+            top: '120px',
+            left: '140px', 
+            right: '20px', 
+            bottom: '20px',
+            height: 'calc(100vh - 134px)',
+            position: 'fixed',
+            overflow: 'hidden'
+          }}>
+            <div className="absolute inset-0 bg-white/80 backdrop-blur-[0.5px]"></div>
+          </div>
+          <div className="fixed z-40 flex items-center justify-center" style={{ 
+            top: '50%', 
+            left: '50%', 
+            transform: 'translate(-50%, -50%)',
+            position: 'fixed'
+          }}>
+            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 max-w-md w-full mx-4">
+              <div className="flex items-center space-x-3">
+                <Lock className="h-6 w-6 text-gray-500" />
+                <div>
+                  <p className="text-lg font-medium text-gray-900">Fonctionnalité verrouillée</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Pour activer la gestion des disponibilités, passez à un abonnement Starter ou Pro
+                  </p>
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end">
+                <Link 
+                  to="/abonnement"
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Voir les plans
+                </Link>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

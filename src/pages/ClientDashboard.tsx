@@ -205,9 +205,9 @@ export default function ClientDashboard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex items-center space-x-2 py-2">
-                <div className="bg-white/10 p-1.5 rounded-lg">
-                  <Calendar className="h-6 w-6 text-blue-100" />
-                </div>
+                <Link to="/" className="bg-white p-1.5 rounded-lg">
+                <img src="https://courtizy.fr/logo.png" alt="Logo" style={{ width: '32px', height: '32px', backgroundColor: 'transparent' }} />
+                </Link>
                 <Link to="/" className="text-2xl font-bold hover:text-blue-100 transition-colors">
                   Courtizy
                 </Link>
@@ -330,7 +330,7 @@ export default function ClientDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="bg-white rounded-lg shadow-md p-6 relative min-h-[400px] flex flex-col justify-between">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Prochains Rendez-vous</h2>
+              <Link to="/client/rendezvous" className="text-lg font-semibold text-gray-900">Prochains Rendez-vous</Link>
               <div className="absolute top-5 right-4 bg-[#244257] text-white rounded-full w-8 h-8 flex items-center justify-center">
                 {appointments.length}
               </div>
@@ -378,7 +378,7 @@ export default function ClientDashboard() {
                 ))}
               </ul>
             )}
-            <Link to="/search">
+            <Link to="/">
               <button className="mt-6 w-full flex items-center justify-center space-x-2 text-blue-600 hover:text-blue-700 font-medium py-2 px-4 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
                 <Plus className="h-5 w-5" />
                 <span>Prendre un rendez-vous</span>
@@ -389,7 +389,7 @@ export default function ClientDashboard() {
           {/* Card 2: Liste des courtiers */}
           <div className="bg-white rounded-lg shadow-md p-6 relative min-h-[400px] flex flex-col justify-between">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Liste des Courtiers</h2>
+              <Link to="/client/vos-courtiers" className="text-lg font-semibold text-gray-900">Liste des Courtiers</Link>
               <User className="h-6 w-6 text-[#244257]" />
             </div>
             {Object.keys(courtiers).length === 0 ? (
@@ -416,9 +416,11 @@ export default function ClientDashboard() {
                 ))}
               </ul>
             )}
-            <button className="mt-6 w-full py-2 px-4 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
-              Voir tous mes courtiers
-            </button>
+            <Link to="/client/vos-courtiers">
+              <button className="mt-6 w-full py-2 px-4 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
+                Voir tous mes courtiers
+              </button>
+            </Link>
           </div>
 
           {/* Card 3: Informations de l'utilisateur */}

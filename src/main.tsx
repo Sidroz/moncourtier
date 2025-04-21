@@ -25,6 +25,8 @@ import BrokerCabinetManagement from './pages/BrokerCabinetManagement.tsx';
 import BrokerCreateCabinet from './pages/BrokerCreateCabinet.tsx';
 import Pricing from './pages/Pricing.tsx';
 import BrokerSettings from './pages/BrokerSettings.tsx';
+import HelpPage from './pages/HelpPage.tsx';
+import Subscription from './pages/BrokerSubscription.tsx';
 import './index.css';
 
 const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -75,6 +77,8 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/pour-les-courtiers" element={<ForBrokers />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/courtier/settings" element={<BrokerSettings />} />
+            <Route path="/aide" element={<HelpPage />} />
+            <Route path="/abonnement" element={<Subscription />} />
           </>
         )}
       </Routes>

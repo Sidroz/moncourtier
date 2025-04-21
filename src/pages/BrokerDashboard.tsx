@@ -2,11 +2,14 @@ import { useState, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../firebase';
 import { doc, getDoc, collection, query, where, getDocs, orderBy, Timestamp, addDoc } from 'firebase/firestore';
-import { Calendar, Clock, FileText, Settings, LogOut, Users, BarChart as ChartBar, User, Mail, Phone, Home, Plus, X, Building } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Calendar, Clock, FileText, Settings, LogOut, Users, BarChart as ChartBar, User, Mail, Phone, Home, Plus, X, Building, CheckCircle, AlertCircle, CreditCard } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import AddClientModal from '../components/AddClientModal';
+import { getBrokerAppointments } from '../services/appointmentService';
+import { getBrokerSubscription } from '../services/subscriptionService';
+import { BrokerSubscription } from '../types/subscription';
 
 // Interface pour les tâches
 interface Task {
@@ -46,6 +49,8 @@ export default function BrokerDashboard() {
   const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
   const [hasCabinet, setHasCabinet] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [subscription, setSubscription] = useState<BrokerSubscription | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!loading && user) {
@@ -166,6 +171,17 @@ export default function BrokerDashboard() {
     fetchTasks();
   }, [user, isAuthorized]);
 
+  useEffect(() => {
+    const loadSubscription = async () => {
+      if (user) {
+        const brokerSubscription = await getBrokerSubscription(user.uid);
+        setSubscription(brokerSubscription);
+      }
+    };
+
+    loadSubscription();
+  }, [user]);
+
   // Gérer la soumission du formulaire de tâche
   const handleTaskSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -225,6 +241,15 @@ export default function BrokerDashboard() {
     console.log('Client ajouté avec succès');
   };
 
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
+    }
+  };
+
   if (loading || !authChecked) {
     return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
   }
@@ -244,13 +269,36 @@ export default function BrokerDashboard() {
       <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-10">
         <div className="max-w-[95%] mx-auto px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <Calendar className="h-8 w-8 text-blue-600" />
-              <Link to="/" className="text-2xl font-bold text-blue-600">Courtizy</Link>
+            <div className="flex items-center space-x-3">
+              <Link to="/" className="bg-blue-50 p-2 rounded-xl">
+                <img src="https://courtizy.fr/logo.png" alt="Logo" style={{ width: '32px', height: '32px', backgroundColor: 'transparent' }} />
+              </Link>
+              <Link to="/" className="text-2xl font-extrabold text-blue-950 tracking-tight">Courtizy</Link>
+              <div className="w-px h-6 bg-gray-200 mx-2"></div>
+              <Link 
+                to="/abonnement"
+                className={`flex items-center space-x-2 px-3 py-1.5 rounded-full ${
+                  subscription?.plan === 'pro' 
+                    ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white' 
+                    : subscription?.plan === 'starter'
+                    ? 'bg-blue-100 text-blue-800'
+                    : 'bg-gray-100 text-gray-800'
+                } hover:opacity-90 transition-opacity`}
+              >
+                <CreditCard className={`h-4 w-4 ${
+                  subscription?.plan === 'pro' ? 'text-white' : 'text-gray-500'
+                }`} />
+                <span className="text-sm font-medium">
+                  Abonnement • {subscription?.plan ? subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1) : 'Free'}
+                </span>
+              </Link>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-gray-700">{userData.firstName} {userData.lastName}</span>
-              <button className="text-gray-600 hover:text-gray-800">
+              <button 
+                onClick={handleLogout}
+                className="text-gray-600 hover:text-gray-800 transition-colors"
+              >
                 <LogOut className="h-5 w-5" />
               </button>
             </div>
@@ -267,15 +315,15 @@ export default function BrokerDashboard() {
               <Calendar className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Agenda</span>
             </Link>
-            <Link to="/courtier/clients" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
-              <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
-              <Users className="h-6 w-6 group-hover:scale-110 transition-transform" />
-              <span className="text-xs mt-2 font-medium">Clients</span>
-            </Link>
             <Link to="/courtier/disponibilites" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <Clock className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Disponibilités</span>
+            </Link>
+            <Link to="/courtier/clients" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">
+              <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
+              <Users className="h-6 w-6 group-hover:scale-110 transition-transform" />
+              <span className="text-xs mt-2 font-medium">Clients</span>
             </Link>
             {hasCabinet && (
               <Link to="/courtier/cabinet" className="flex flex-col items-center text-white/70 hover:text-white group transition-all duration-300 relative w-24">

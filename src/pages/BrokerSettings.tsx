@@ -3,7 +3,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../firebase';
 import { updateEmail, updatePassword, deleteUser, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { doc, deleteDoc, getDoc } from 'firebase/firestore';
-import { Calendar, Clock, Settings, LogOut, Users, BarChart as ChartBar, Mail, User, Building } from 'lucide-react';
+import { Calendar, Clock, Settings, LogOut, Users, BarChart as ChartBar, Mail, User, Building, CreditCard } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 
@@ -183,6 +183,13 @@ export default function BrokerSettings() {
               <div className="absolute inset-0 bg-white/10 rounded-xl w-full h-full opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
               <User className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-xs mt-2 font-medium">Profil</span>
+            </Link>
+            <Link
+              to="/broker/settings/subscription"
+              className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 transition-colors"
+            >
+              <CreditCard className="h-5 w-5" />
+              <span>Abonnement</span>
             </Link>
           </div>
         </div>

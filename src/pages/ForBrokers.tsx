@@ -22,12 +22,12 @@ const ForBrokers = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-3">
-              <div className={`rounded-xl p-2 transition-all duration-300 ${isScrolled ? 'bg-blue-50' : 'bg-white/10 backdrop-blur-sm'}`}>
-                <Calendar className={`h-8 w-8 transition-colors duration-300 ${isScrolled ? 'text-blue-950' : 'text-white'}`} />
-              </div>
-              <span className={`text-2xl font-extrabold tracking-tight transition-colors duration-300 ${isScrolled ? 'text-blue-950' : 'text-white'}`}>
+              <Link to="/" className={`rounded-xl p-2 transition-all duration-300 ${isScrolled ? 'bg-blue-50' : 'bg-white backdrop-blur-sm'}`}>
+              <img src="https://courtizy.fr/logo.png" alt="Logo" style={{ width: '32px', height: '32px', backgroundColor: 'transparent' }} />
+              </Link>
+              <Link to="/" className={`text-2xl font-extrabold tracking-tight transition-colors duration-300 ${isScrolled ? 'text-blue-950' : 'text-white'}`}>
                 Courtizy<span className="text-blue-500">Pro</span>
-              </span>
+              </Link>
             </div>
             
             <div className="flex items-center space-x-8">
@@ -1010,7 +1010,7 @@ const ForBrokers = () => {
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center space-x-3 mb-6">
                 <div className="bg-gradient-to-r from-blue-500 to-blue-700 p-2 rounded-lg">
-                  <Calendar className="h-8 w-8 text-white" />
+                <img src="https://courtizy.fr/logo.png" alt="Logo" style={{ width: '32px', height: '32px', backgroundColor: 'transparent' }} />
                 </div>
                 <span className="text-2xl font-bold text-white">Courtizy Pro</span>
               </div>

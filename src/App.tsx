@@ -1,12 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, MapPin, Calendar, Clock, Building2, Shield, Wallet, CheckCircle, ArrowRight, Briefcase, Calculator, PiggyBank, User } from 'lucide-react';
+import { Clock, Building2, Shield, CheckCircle } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Autocomplete, useJsApiLoader } from '@react-google-maps/api';
 import { auth, db } from './firebase'; // Assure-toi que le chemin est correct
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { doc, getDoc } from 'firebase/firestore';
+import { HiOutlinePhone, HiOutlineUser, HiMiniArrowRight, HiOutlineMapPin, HiOutlineShieldCheck, HiOutlineBuildingOffice2, HiOutlineWallet, HiOutlineBanknotes, HiOutlineCalculator, HiOutlineBriefcase } from "react-icons/hi2";
+import { HiOutlineSearch } from "react-icons/hi";
+import BrokerSubscription from './pages/BrokerSubscription';
 
-type BrokerType = 'assurance' | 'realestate' | 'credit' | 'retirement' | 'tax' | 'recruitment' | 'all';
+
+type BrokerType = 'assurance' | 'immobilier' | 'credit' | 'retraite' | 'fiscalite' | 'recrutement' | 'all' | 'travaux';
 type UserType = 'client' | 'courtier' | string | null;
 
 function App() {
@@ -147,7 +151,7 @@ function App() {
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-3">
               <div className="bg-blue-50 p-2 rounded-xl">
-                <Calendar className="h-8 w-8 text-blue-950" />
+              <img src="https://courtizy.fr/logo.png" alt="Logo" style={{ width: '32px', height: '32px', backgroundColor: 'transparent' }} />
               </div>
               <span className="text-2xl font-extrabold text-blue-950 tracking-tight">Courtizy</span>
             </div>
@@ -156,13 +160,14 @@ function App() {
                 <a href="#how-it-works" className="text-gray-700 hover:text-blue-950 font-medium transition-colors duration-200 py-2 border-b-2 border-transparent hover:border-blue-950">Comment ça marche</a>
                 <a href="#services" className="text-gray-700 hover:text-blue-950 font-medium transition-colors duration-200 py-2 border-b-2 border-transparent hover:border-blue-950">Nos services</a>
                 <a href="#advantages" className="text-gray-700 hover:text-blue-950 font-medium transition-colors duration-200 py-2 border-b-2 border-transparent hover:border-blue-950">Avantages</a>
-                <Link to="/pour-les-courtiers" className="text-gray-700 hover:text-blue-950 font-medium transition-colors duration-200 py-2 border-b-2 border-transparent hover:border-blue-950">Vous êtes Courtiers ?</Link>
+                <a href="https://pro.courtizy.fr" className="text-gray-700 hover:text-blue-950 font-medium transition-colors duration-200 py-2 border-b-2 border-transparent hover:border-blue-950">Vous êtes Courtiers ?</a>
+                <Link to="/aide" className="text-gray-700 hover:text-blue-950 font-medium transition-colors duration-200 py-2 border-b-2 border-transparent hover:border-blue-950">Aide</Link>
               </nav>
               <Link 
                 to={getUserDashboardUrl()}
                 className="flex items-center space-x-2 bg-blue-950 text-white py-2 px-4 rounded-xl hover:bg-blue-800 transition-all duration-300 shadow-md"
               >
-                <User className="h-5 w-5" />
+                <HiOutlineUser className="h-6 w-6" />
                 <span>{getUserDashboardText()}</span>
               </Link>
             </div>
@@ -187,7 +192,7 @@ function App() {
           <div className="bg-white rounded-2xl shadow-2xl p-10 max-w-4xl mx-auto transform hover:translate-y-[-5px] transition-all duration-300 border border-gray-100">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="relative">
-                <MapPin className="absolute left-4 top-5 h-6 w-6 text-blue-950" />
+                <HiOutlineMapPin className="absolute left-4 top-5 h-6 w-6 text-blue-950" />
                 <Autocomplete
                   onLoad={(autocomplete) => (autocompleteRef.current = autocomplete)}
                   onPlaceChanged={handlePlaceChanged}
@@ -203,7 +208,7 @@ function App() {
                 </Autocomplete>
               </div>
               <div className="relative">
-                <Search className="absolute left-4 top-5 h-6 w-6 text-blue-950" />
+                <HiOutlineSearch className="absolute left-4 top-5 h-6 w-6 text-blue-950" />
                 <select
                   className="pl-14 w-full h-16 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-950 focus:border-transparent shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 fill=%22none%22 viewBox=%220 0 20 20%22%3E%3Cpath stroke=%22%236B7280%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22 stroke-width=%221.5%22 d=%22m6 8 4 4 4-4%22/%3E%3C/svg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_1rem_center] bg-no-repeat text-lg"
                   value={selectedType}
@@ -211,11 +216,12 @@ function App() {
                 >
                   <option value="all">Tous les types de courtiers</option>
                   <option value="assurance">Courtier en Assurance</option>
-                  <option value="realestate">Courtier Immobilier</option>
+                  <option value="immobilier">Courtier en Immobilier</option>
                   <option value="credit">Courtier en Crédit</option>
-                  <option value="retirement">Courtier en Retraite</option>
-                  <option value="tax">Courtier en Fiscalité</option>
-                  <option value="recruitment">Courtier en Recrutement</option>
+                  <option value="retraite">Courtier en Retraite</option>
+                  <option value="fiscalite">Courtier en Fiscalité</option>
+                  <option value="recrutement">Courtier en Recrutement</option>
+                  <option value="travaux">Courtier en Travaux</option>
                 </select>
               </div>
             </div>
@@ -224,7 +230,7 @@ function App() {
               className="w-full mt-8 bg-gradient-to-r from-blue-950 to-indigo-900 text-white py-5 rounded-xl hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300 flex items-center justify-center space-x-3 font-medium text-xl"
             >
               <span>Rechercher un courtier</span>
-              <ArrowRight className="h-6 w-6 ml-2 animate-pulse" />
+              <HiMiniArrowRight className="h-6 w-6 ml-2 animate-pulse" />
             </button>
           </div>
         </div>
@@ -239,7 +245,7 @@ function App() {
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-8">
           <div className="bg-white rounded-2xl shadow-md p-8 transform hover:scale-105 transition-transform duration-300 border border-gray-100">
             <div className="bg-blue-50 p-4 rounded-xl inline-block mb-6">
-              <Shield className="h-12 w-12 text-blue-950" />
+              <HiOutlineShieldCheck className="h-12 w-12 text-blue-950" />
             </div>
             <h3 className="text-xl font-bold mb-4 text-gray-900">Assurance</h3>
             <p className="text-gray-600 mb-6">Rencontrez des courtiers en assurance pour une protection optimale de vos biens.</p>
@@ -261,7 +267,7 @@ function App() {
           
           <div className="bg-white rounded-2xl shadow-md p-8 transform hover:scale-105 transition-transform duration-300 border border-gray-100">
             <div className="bg-blue-50 p-4 rounded-xl inline-block mb-6">
-              <Building2 className="h-12 w-12 text-blue-950" />
+              <HiOutlineBuildingOffice2 className="h-12 w-12 text-blue-950" />
             </div>
             <h3 className="text-xl font-bold mb-4 text-gray-900">Immobilier</h3>
             <p className="text-gray-600 mb-6">Découvrez des courtiers immobiliers pour un accompagnement personnalisé dans vos projets.</p>
@@ -283,7 +289,7 @@ function App() {
 
           <div className="bg-white rounded-2xl shadow-md p-8 transform hover:scale-105 transition-transform duration-300 border border-gray-100">
             <div className="bg-blue-50 p-4 rounded-xl inline-block mb-6">
-              <Wallet className="h-12 w-12 text-blue-950" />
+              <HiOutlineWallet className="h-12 w-12 text-blue-950" />
             </div>
             <h3 className="text-xl font-bold mb-4 text-gray-900">Crédit</h3>
             <p className="text-gray-600 mb-6">Entrez en contact avec des experts en crédit pour des solutions de financement adaptées.</p>
@@ -305,7 +311,7 @@ function App() {
 
           <div className="bg-white rounded-2xl shadow-md p-8 transform hover:scale-105 transition-transform duration-300 border border-gray-100">
             <div className="bg-blue-50 p-4 rounded-xl inline-block mb-6">
-              <PiggyBank className="h-12 w-12 text-blue-950" />
+              <HiOutlineBanknotes className="h-12 w-12 text-blue-950" />
             </div>
             <h3 className="text-xl font-bold mb-4 text-gray-900">Retraite</h3>
             <p className="text-gray-600 mb-6">Rencontrez des spécialistes en retraite pour préparer sereinement votre avenir.</p>
@@ -327,7 +333,7 @@ function App() {
 
           <div className="bg-white rounded-2xl shadow-md p-8 transform hover:scale-105 transition-transform duration-300 border border-gray-100">
             <div className="bg-blue-50 p-4 rounded-xl inline-block mb-6">
-              <Calculator className="h-12 w-12 text-blue-950" />
+              <HiOutlineCalculator className="h-12 w-12 text-blue-950" />
             </div>
             <h3 className="text-xl font-bold mb-4 text-gray-900">Fiscalité</h3>
             <p className="text-gray-600 mb-6">Échangez avec des courtiers fiscalistes pour optimiser votre situation patrimoniale.</p>
@@ -349,7 +355,7 @@ function App() {
 
           <div className="bg-white rounded-2xl shadow-md p-8 transform hover:scale-105 transition-transform duration-300 border border-gray-100">
             <div className="bg-blue-50 p-4 rounded-xl inline-block mb-6">
-              <Briefcase className="h-12 w-12 text-blue-950" />
+              <HiOutlineBriefcase className="h-12 w-12 text-blue-950" />
             </div>
             <h3 className="text-xl font-bold mb-4 text-gray-900">Recrutement</h3>
             <p className="text-gray-600 mb-6">Connectez-vous avec des courtiers en recrutement pour trouver les meilleurs talents.</p>
@@ -451,30 +457,92 @@ function App() {
             to="/pour-les-courtiers" 
             className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-950 to-indigo-900 text-white rounded-xl hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300 font-medium"
           >
-            Découvrir notre processus de recrutement
-            <ArrowRight className="ml-2 h-5 w-5" />
+            Découvrir CourtizyPro
+            <HiMiniArrowRight className="ml-2 h-5 w-5" />
           </Link>
         </div>
       </div>
       
-      {/* Footer */}
-      <footer className="bg-blue-950 text-white py-12 mt-12">
+      {/* Footer modernisé */}
+      <footer className="bg-gray-900 pt-20 pb-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center space-x-3 mb-6 md:mb-0">
-              <Calendar className="h-8 w-8 text-white" />
-              <span className="text-2xl font-bold">Courtizy</span>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+            <div className="col-span-1 md:col-span-2">
+              <div className="flex items-center space-x-3 mb-6">
+              <div className="bg-gradient-to-r from-blue-50 to-blue-400 p-2 rounded-xl">
+              <img src="https://courtizy.fr/logo.png" alt="Logo" style={{ width: '32px', height: '32px', backgroundColor: 'transparent' }} />
+              </div>
+                <span className="text-2xl font-bold text-white">Courtizy</span>
+              </div>
+              <p className="text-gray-400 mb-8 max-w-md">
+                La plateforme de référence qui connecte les courtiers professionnels avec des clients qualifiés. Développez votre activité avec des outils innovants.
+              </p>
+              <div className="flex space-x-4">
+                <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                  <span className="sr-only">LinkedIn</span>
+                  <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                  </svg>
+                </a>
+                <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                  <span className="sr-only">Twitter</span>
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"/>
+                  </svg>
+                </a>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-5 justify-center">
-              <Link to="/pour-les-courtiers" className="text-white hover:text-blue-200 transition-colors">Espace Courtiers</Link>
-              <a href="#how-it-works" className="text-white hover:text-blue-200 transition-colors">Comment ça marche</a>
-              <a href="#services" className="text-white hover:text-blue-200 transition-colors">Nos services</a>
-              <a href="#" className="text-white hover:text-blue-200 transition-colors">Mentions légales</a>
-              <a href="#" className="text-white hover:text-blue-200 transition-colors">Contact</a>
+            
+            <div>
+              <h3 className="text-white font-semibold mb-6">Liens rapides</h3>
+              <ul className="space-y-4">
+                <li>
+                  <a href="#" className="text-gray-400 hover:text-white transition-colors">Accueil</a>
+                </li>
+                <li>
+                  <a href="#benefits" className="text-gray-400 hover:text-white transition-colors">Fonctionnalités</a>
+                </li>
+                <li>
+                  <a href="#testimonials" className="text-gray-400 hover:text-white transition-colors">Témoignages</a>
+                </li>
+                <li>
+                  <a href="/login" className="text-gray-400 hover:text-white transition-colors">Connexion</a>
+                </li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="text-white font-semibold mb-6">Contact</h3>
+              <ul className="space-y-4">
+                <li className="flex items-center text-gray-400">
+                  <HiOutlinePhone className="h-5 w-5 mr-3" />
+                  <span>01 23 45 67 89</span>
+                </li>
+                <li className="flex items-center text-gray-400">
+                  <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <span>contact@courtizy.fr</span>
+                </li>
+                <li className="flex items-center text-gray-400">
+                  <Building2 className="h-5 w-5 mr-3" />
+                  <span>Bordeaux, France</span>
+                </li>
+              </ul>
             </div>
           </div>
-          <div className="mt-8 pt-8 border-t border-indigo-900 text-center text-blue-200">
-            <p>© {new Date().getFullYear()} Courtizy. Tous droits réservés.</p>
+          
+          <div className="border-t border-gray-800 pt-8">
+            <div className="flex flex-col md:flex-row justify-between items-center">
+              <p className="text-gray-400 text-sm mb-4 md:mb-0">
+                &copy; {new Date().getFullYear()} Courtizy. Tous droits réservés.
+              </p>
+              <div className="flex space-x-6">
+                <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Mentions légales</a>
+                <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Politique de confidentialité</a>
+                <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">CGU</a>
+              </div>
+            </div>
           </div>
         </div>
       </footer>

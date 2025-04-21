@@ -58,10 +58,14 @@ export default function BrokerSignup() {
   // Définir specialtiesOptions à l'intérieur du composant
   const specialtiesOptions = [
     { id: 'assurance', label: 'Assurance', icon: '🛡️' },
-    { id: 'habitation', label: 'Habitation', icon: '🏠' },
-    { id: 'crédit', label: 'Crédit', icon: '💰' },
+    { id: 'immobilier', label: 'Immobilier', icon: '🏠' },
+    { id: 'credit', label: 'Crédit', icon: '💰' },
     { id: 'investissement', label: 'Investissement', icon: '📈' },
-    { id: 'épargne', label: 'Épargne', icon: '💼' }
+    { id: 'epargne', label: 'Épargne', icon: '💼' },
+    { id: 'retraite', label: 'Retraite', icon: '💼' },
+    { id: 'fiscalite', label: 'Fiscalité', icon: '💼' },
+    { id: 'recrutement', label: 'Recrutement', icon: '💼' },
+    { id: 'travaux', label: 'Travaux', icon: '💼' }
   ];
 
   const handlePlaceChanged = () => {
@@ -197,11 +201,11 @@ export default function BrokerSignup() {
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-xl mx-auto">
         <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-600 text-white mb-4 shadow-lg">
-            <Calendar className="h-8 w-8" />
+          <div className="inline-flex items-center justify-center w-24 h-24 rounded-xl bg-blue-50 text-white mb-4 shadow-lg">
+          <img src="https://courtizy.fr/logo.png" alt="Logo" style={{ width: '64px', height: '64px', backgroundColor: 'transparent' }} />
           </div>
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
-            MonCourtier
+          <h1 className="text-4xl font-extrabold text-blue-950 tracking-tight">
+            Courtizy
           </h1>
           <p className="mt-3 text-xl text-gray-500">
             Créez votre compte professionnel
